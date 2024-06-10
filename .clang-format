@@ -1,0 +1,18 @@
+Language: Cpp
+
+AlignEscapedNewlines: DontAlign
+AlignTrailingComments: false
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Empty
+AlwaysBreakTemplateDeclarations: Yes
+ColumnLimit: 100
+ContinuationIndentWidth: 2
+IndentRequiresClause: false
+InsertBraces: true
+PointerAlignment: Left
+QualifierAlignment: Custom
+QualifierOrder: ["static", "inline", "constexpr", "const", "type"]
+RequiresClausePosition: OwnLine
+RequiresExpressionIndentation: OuterScope
+SpaceAfterTemplateKeyword: false
+UseTab: Never
