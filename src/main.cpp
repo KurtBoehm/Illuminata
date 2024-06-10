@@ -1,37 +1,10 @@
 #include <algorithm>
 #include <filesystem>
 #include <memory>
-#include <mupdf/classes.h>
 #include <optional>
 #include <utility>
 
-#include <cairomm/context.h>
-#include <fmt/core.h>
-#include <fmt/format.h>
-#include <fmt/std.h>
-#include <gdk/gdkkeysyms.h>
-#include <gdkmm/enums.h>
-#include <glib.h>
-#include <gtkmm/application.h>
-#include <gtkmm/applicationwindow.h>
-#include <gtkmm/button.h>
-#include <gtkmm/drawingarea.h>
-#include <gtkmm/eventcontrollerkey.h>
-#include <gtkmm/headerbar.h>
-#include <gtkmm/image.h>
-#include <gtkmm/window.h>
-#include <libadwaita-1/adwaita.h>
-
-#include "gdkmm/general.h"
-#include "gdkmm/pixbuf.h"
-#include "giomm/asyncresult.h"
-#include "giomm/listmodel.h"
-#include "giomm/liststore.h"
-#include "glibmm/refptr.h"
-#include "gtkmm/error.h"
-#include "gtkmm/filedialog.h"
-#include "gtkmm/filefilter.h"
-#include "hirgon/mupdf.hpp"
+#include "hirgon/hirgon.hpp"
 
 struct PdfPageInfo {
   mupdf::FzPage page;
@@ -80,7 +53,8 @@ struct PDFViewer : public Gtk::ApplicationWindow {
   explicit PDFViewer(std::optional<std::filesystem::path> path = {}) {
     set_title("Hirgon");
 
-    drawing_area.set_draw_func([&](std::shared_ptr<Cairo::Context> ctx, int width, int height) {
+    drawing_area.set_draw_func([&](const std::shared_ptr<Cairo::Context>& ctx, int width,
+                                   int height) {
       const auto scale_factor = get_scale_factor();
       ctx->scale(1.0 / scale_factor, 1.0 / scale_factor);
       const auto w = width * scale_factor;
@@ -233,21 +207,15 @@ struct PDFViewer : public Gtk::ApplicationWindow {
   }
 };
 
-void getter(mupdf::PdfDocument& pdf, int pno, float width, float height, PdfPageInfo info) {
-  mupdf::FzPixmap pix{
-    info.display_list,
-    mupdf::FzMatrix{}.fz_pre_scale(1, 1),
-    mupdf::FzColorspace::Fixed_RGB,
-    0,
-  };
-  pix.samples();
-}
-
 int main(int argc, char* argv[]) {
+  if (argc > 2) {
+    fmt::print(stderr, "Usage: {} [PDF Path]", argv[0]);
+  }
+
   adw_init();
 
   auto app = Gtk::Application::create("org.kurbo96.hirgon");
 
-  return app->make_window_and_run<PDFViewer>(
-    argc, argv, std::filesystem::path{"/home/gildor/projects/sci-cpp-exercises/build/sheet04.pdf"});
+  auto path = (argc > 1) ? std::make_optional<std::filesystem::path>(argv[1]) : std::nullopt;
+  return app->make_window_and_run<PDFViewer>(0, nullptr, path);
 }

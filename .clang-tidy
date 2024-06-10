@@ -10,6 +10,7 @@ Checks: "
   -zircon-*,
   -bugprone-easily-swappable-parameters,
   -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -misc-non-private-member-variables-in-classes,
   -modernize-use-trailing-return-type,
   -readability-function-cognitive-complexity,
