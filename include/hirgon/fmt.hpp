@@ -2,6 +2,7 @@
 #define INCLUDE_HIRGON_FMT_HPP
 
 // IWYU pragma: begin_exports
+#include <fmt/chrono.h>
 #include <fmt/core.h>
 #include <fmt/format.h>
 #include <fmt/std.h>

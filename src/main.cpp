@@ -6,6 +6,12 @@
 
 #include "hirgon/hirgon.hpp"
 
+#define PRINT false
+
+#if PRINT
+#include <chrono>
+#endif
+
 struct PdfPageInfo {
   mupdf::FzPage page;
   mupdf::FzDisplayList display_list;
@@ -19,14 +25,18 @@ struct PdfInfo {
 
   explicit PdfInfo(std::filesystem::path pdf, int pno = 0)
       : path{std::move(pdf)}, doc{path.c_str()}, page{pno} {
+#if PRINT
     fmt::print("Open {:?}\n", path);
+#endif
     update_page(pno);
   }
 
   void update_page(int pno) {
     page = pno;
     if (valid_page(pno)) {
+#if PRINT
       fmt::print("load page {}\n", pno);
+#endif
       mupdf::FzPage p = doc.fz_load_page(pno);
       page_info = PdfPageInfo(p, p.fz_new_display_list_from_page());
     } else {
@@ -55,6 +65,12 @@ struct PDFViewer : public Gtk::ApplicationWindow {
 
     drawing_area.set_draw_func([&](const std::shared_ptr<Cairo::Context>& ctx, int width,
                                    int height) {
+#if PRINT
+      using Clock = std::chrono::steady_clock;
+      using Dur = std::chrono::duration<double>;
+      const auto t0 = Clock::now();
+#endif
+
       const auto scale_factor = get_scale_factor();
       ctx->scale(1.0 / scale_factor, 1.0 / scale_factor);
       const auto w = width * scale_factor;
@@ -69,21 +85,45 @@ struct PDFViewer : public Gtk::ApplicationWindow {
       const auto f = std::min(float(w) / std::max(0.F, rect.x1 - rect.x0),
                               float(h) / std::max(0.F, rect.y1 - rect.y0));
 
+#if PRINT
+      const auto t1 = Clock::now();
+#endif
+
       mupdf::FzPixmap pix{
         pinfo->display_list,
         mupdf::FzMatrix{}.fz_pre_scale(f, f),
         mupdf::FzColorspace::Fixed_RGB,
         0,
       };
-      fmt::print("{}×{} → {}×{} → {} → {}×{} {}\n", width, height, w, h, f, pix.fz_pixmap_width(),
-                 pix.fz_pixmap_height(), pix.alpha());
+
+#if PRINT
+      const auto t2 = Clock::now();
+#endif
 
       auto pixbuf =
         Gdk::Pixbuf::create_from_data(pix.samples(), Gdk::Colorspace::RGB, bool(pix.alpha()), 8,
                                       pix.fz_pixmap_width(), pix.fz_pixmap_height(), pix.stride());
+
+#if PRINT
+      const auto t3 = Clock::now();
+#endif
+
       Gdk::Cairo::set_source_pixbuf(ctx, pixbuf, float(w - pix.w()) / 2.F,
                                     float(h - pix.h()) / 2.F);
+
+#if PRINT
+      const auto t4 = Clock::now();
+#endif
+
       ctx->paint();
+
+#if PRINT
+      const auto t5 = Clock::now();
+      fmt::print("{}×{} → {}×{} → {} → {}×{} {}\n", width, height, w, h, f, pix.fz_pixmap_width(),
+                 pix.fz_pixmap_height(), pix.alpha());
+      fmt::print("setup={}, pixmap={}, pixbuf={}, cairo={}, paint={}\n", Dur{t1 - t0}, Dur{t2 - t1},
+                 Dur{t3 - t2}, Dur{t4 - t3}, Dur{t5 - t4});
+#endif
     });
     set_child(drawing_area);
 
@@ -97,8 +137,6 @@ struct PDFViewer : public Gtk::ApplicationWindow {
     open_button.set_child(open_icon);
     open_button.set_focusable(false);
     [[maybe_unused]] auto open_conn = open_button.signal_clicked().connect([&]() {
-      fmt::print("click!\n");
-
       auto filter_pdf = Gtk::FileFilter::create();
       filter_pdf->set_name("PDF files");
       filter_pdf->add_mime_type("application/pdf");
@@ -120,12 +158,12 @@ struct PDFViewer : public Gtk::ApplicationWindow {
 
           std::filesystem::path path{file->get_path()};
           if (!std::filesystem::exists(path)) {
-            fmt::print("Path {:?} does not exist!\n", path);
+            fmt::print(stderr, "Path {:?} does not exist!\n", path);
           }
 
           load_pdf(path);
         } catch (const Gtk::DialogError& ex) {
-          fmt::print("FileDialog failed: {}\n", ex);
+          fmt::print(stderr, "FileDialog failed: {}\n", ex);
         }
       });
     });

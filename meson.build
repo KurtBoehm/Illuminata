@@ -20,6 +20,7 @@ mupdfcpp_deps = cpp.find_library('mupdfcpp')
 executable(
   'hirgon',
   'src/main.cpp',
+  install: true,
   include_directories: ['include'],
   dependencies: [fmt_dep, gtkmm_dep, libadwaita_dep, mupdf_dep] + mupdfcpp_deps,
 )
