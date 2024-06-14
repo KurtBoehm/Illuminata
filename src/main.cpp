@@ -71,7 +71,7 @@ struct PDFViewer : public Gtk::ApplicationWindow {
       const auto t0 = Clock::now();
 #endif
 
-      const auto scale_factor = get_scale_factor();
+      const auto scale_factor = drawing_area.get_scale_factor();
       ctx->scale(1.0 / scale_factor, 1.0 / scale_factor);
       const auto w = width * scale_factor;
       const auto h = height * scale_factor;
@@ -125,6 +125,9 @@ struct PDFViewer : public Gtk::ApplicationWindow {
                  Dur{t3 - t2}, Dur{t4 - t3}, Dur{t5 - t4});
 #endif
     });
+    [[maybe_unused]] auto scale_conn =
+      drawing_area.property_scale_factor().signal_changed().connect(
+        [&] { drawing_area.queue_draw(); });
     set_child(drawing_area);
 
     if (path.has_value()) {
