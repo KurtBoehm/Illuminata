@@ -3,9 +3,66 @@
 
 // IWYU pragma: begin_exports
 #include <gdk/gdkkeysyms.h>
+#include <gdkmm/applaunchcontext.h>
+#include <gdkmm/cairocontext.h>
+#include <gdkmm/cairoutils.h>
+#include <gdkmm/clipboard.h>
+#include <gdkmm/contentformats.h>
+#include <gdkmm/contentformatsbuilder.h>
+#include <gdkmm/contentprovider.h>
+#include <gdkmm/cursor.h>
+#include <gdkmm/device.h>
+#include <gdkmm/devicepad.h>
+#include <gdkmm/devicetool.h>
+#include <gdkmm/devicewithpad.h>
+#include <gdkmm/display.h>
+#include <gdkmm/displaymanager.h>
+#include <gdkmm/dmabufformats.h>
+#include <gdkmm/dmabuftexture.h>
+#include <gdkmm/dmabuftexturebuilder.h>
+#include <gdkmm/drag.h>
+#include <gdkmm/dragsurface.h>
+#include <gdkmm/dragsurfaceimpl.h>
+#include <gdkmm/dragsurfacesize.h>
+#include <gdkmm/drawcontext.h>
+#include <gdkmm/drop.h>
 #include <gdkmm/enums.h>
+#include <gdkmm/event.h>
+#include <gdkmm/frameclock.h>
+#include <gdkmm/frametimings.h>
 #include <gdkmm/general.h>
+#include <gdkmm/glcontext.h>
+#include <gdkmm/gltexture.h>
+#include <gdkmm/gltexturebuilder.h>
+#include <gdkmm/graphene_point.h>
+#include <gdkmm/graphene_rect.h>
+#include <gdkmm/graphene_size.h>
+#include <gdkmm/memorytexture.h>
+#include <gdkmm/monitor.h>
+#include <gdkmm/paintable.h>
 #include <gdkmm/pixbuf.h>
+#include <gdkmm/pixbufanimation.h>
+#include <gdkmm/pixbufanimationiter.h>
+#include <gdkmm/pixbufformat.h>
+#include <gdkmm/pixbufloader.h>
+#include <gdkmm/popup.h>
+#include <gdkmm/popuplayout.h>
+#include <gdkmm/popupsurfaceimpl.h>
+#include <gdkmm/rectangle.h>
+#include <gdkmm/rgba.h>
+#include <gdkmm/seat.h>
+#include <gdkmm/slot_async.h>
+#include <gdkmm/snapshot.h>
+#include <gdkmm/surface.h>
+#include <gdkmm/texture.h>
+#include <gdkmm/texturedownloader.h>
+#include <gdkmm/timecoord.h>
+#include <gdkmm/toplevel.h>
+#include <gdkmm/toplevellayout.h>
+#include <gdkmm/toplevelsize.h>
+#include <gdkmm/toplevelsurfaceimpl.h>
+#include <gdkmm/value_cairo.h>
+#include <gdkmm/wrap_init.h>
 // IWYU pragma: end_exports
 
 #endif // INCLUDE_HIRGON_GDK_HPP

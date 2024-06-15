@@ -10,6 +10,7 @@
 #include "glib.hpp"
 #include "gtk.hpp"
 #include "mupdf.hpp"
+#include "opengl.hpp"
 // IWYU pragma: end_exports
 
 #endif // INCLUDE_HIRGON_HIRGON_HPP

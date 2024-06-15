@@ -10,6 +10,7 @@ project(
 )
 
 fmt_dep = dependency('fmt')
+epoxy_dep = dependency('epoxy')
 gtkmm_dep = dependency('gtkmm-4.0')
 libadwaita_dep = dependency('libadwaita-1')
 mupdf_dep = dependency('mupdf')
@@ -22,5 +23,5 @@ executable(
   'src/main.cpp',
   install: true,
   include_directories: ['include'],
-  dependencies: [fmt_dep, gtkmm_dep, libadwaita_dep, mupdf_dep] + mupdfcpp_deps,
+  dependencies: [epoxy_dep, fmt_dep, gtkmm_dep, libadwaita_dep, mupdf_dep] + mupdfcpp_deps,
 )
