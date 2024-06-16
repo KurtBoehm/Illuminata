@@ -111,6 +111,11 @@ struct Dims {
   [[nodiscard]] Vec2<T> center() const {
     return {w / T{2}, h / T{2}};
   }
+
+  template<typename TF>
+  explicit operator Dims<TF>() const {
+    return {TF(w), TF(h)};
+  }
 };
 template<typename T>
 struct fmt::formatter<Dims<T>> : nested_formatter<T> {
@@ -212,15 +217,16 @@ inline constexpr char fragment_shader_code[] =
   "in vec2 tex_coord;\n"
   "out vec4 outColor;\n"
   "uniform bool invert;\n"
-  "uniform int area[4];\n"
+  "uniform int area[6];\n"
   "uniform sampler2D tex;\n"
   "\n"
   "void main() {\n"
-  "  ivec2 coord = ivec2(gl_FragCoord) - ivec2(area[0], area[1]);\n"
+  "  ivec2 coord = ivec2(gl_FragCoord);\n"
+  "  coord = ivec2(coord.x, area[5] - coord.y - 1);\n"
+  "  coord -= ivec2(area[0], area[1]);\n"
   "  if (0 > coord.x || coord.x >= area[2] || 0 > coord.y || coord.y >= area[3]) {\n"
   "    outColor = vec4(0.0);\n"
   "  } else {\n"
-  "    coord = ivec2(coord.x, area[3] - coord.y - 1);\n"
   "    outColor = texelFetch(tex, coord, 0);\n"
 #if false
   "    outColor = texture(tex, tex_coord);\n"
@@ -235,7 +241,7 @@ inline constexpr char fragment_shader_code[] =
   "      float b = y + 1.772 * (cb - 0.5);\n"
   "      outColor = vec4(r, g, b, outColor.a);\n"
   "    }\n"
-  "  }"
+  "  }\n"
   "}";
 #endif
 
@@ -248,6 +254,7 @@ struct PDFViewer : public Gtk::ApplicationWindow {
 
   float scale_{1.F};
   Vec2<float> off_{0.F, 0.F};
+  Vec2<float> drag_off_{0.F, 0.F};
 
 #if HIRGON_OPENGL
   std::optional<gl::Program> prog{};
@@ -342,17 +349,17 @@ struct PDFViewer : public Gtk::ApplicationWindow {
 
       const auto& pinfo = pdf->page_info;
       const Rect rect{pinfo->page.fz_bound_page()};
-      const float f =
-        std::min(float(dims.w) / std::abs(rect.w()), float(dims.h) / std::abs(rect.h())) * scale_;
+      const float f = doc_factor(Dims<float>(dims), rect);
       const auto mat = mupdf::FzMatrix{}.fz_pre_scale(f, f);
 
       // In document coordinates
       const auto area_dims = dims / f;
-      const auto view_area = Rect{area_dims} - area_dims.center() + rect.center() + off_;
+      const auto area_center = area_dims.center();
+      const auto center = rect.center() + off_ - drag_off_ * scale_factor / f;
+      const auto view_area = Rect{area_dims} - area_center + center;
       const auto inter = view_area.intersect(rect);
-      const auto off = (inter.offset() - view_area.offset()) * f;
-      fmt::print("rect={}, area_dims={}, view_area={}, inter={}, off={}\n", rect, area_dims,
-                 view_area, inter, off);
+      const auto view_area_min = inter - center + area_center;
+      const auto off = view_area_min.offset() * f;
 
       auto rclip = inter.fz_rect();
       auto irect = rclip.fz_transform_rect(mat).fz_round_rect();
@@ -395,14 +402,11 @@ struct PDFViewer : public Gtk::ApplicationWindow {
         }
 
         {
-          std::array<GLint, 4> arr{
-            GLint(std::round(off.x)),
-            GLint(std::round(off.y)),
-            pix.w(),
-            pix.h(),
-          };
           glUniform1i(invert_uniform_, static_cast<GLint>(invert));
-          glUniform1iv(area_uniform_, 4, arr.data());
+          std::array<GLint, 6> arr{
+            GLint(std::round(off.x)), GLint(std::round(off.y)), pix.w(), pix.h(), dims.w, dims.h,
+          };
+          glUniform1iv(area_uniform_, arr.size(), arr.data());
         }
 
         glEnableVertexAttribArray(0);
@@ -524,12 +528,14 @@ struct PDFViewer : public Gtk::ApplicationWindow {
         case GDK_KEY_Down:
         case GDK_KEY_Page_Down: {
           navigate_pages(1);
+          reset_transform();
           return true;
         }
         case GDK_KEY_Left:
         case GDK_KEY_Up:
         case GDK_KEY_Page_Up: {
           navigate_pages(-1);
+          reset_transform();
           return true;
         }
         case GDK_KEY_KP_Add:
@@ -546,8 +552,7 @@ struct PDFViewer : public Gtk::ApplicationWindow {
         }
         case GDK_KEY_KP_0:
         case GDK_KEY_0: {
-          scale_ = 1.F;
-          off_ = {0.F, 0.F};
+          reset_transform();
           draw_area.queue_draw();
           return true;
         }
@@ -595,6 +600,42 @@ struct PDFViewer : public Gtk::ApplicationWindow {
       },
       true);
     add_controller(evk);
+
+    auto drag = Gtk::GestureDrag::create();
+    [[maybe_unused]] auto drag_update_conn =
+      drag->signal_drag_update().connect([this](double start_x, double start_y) {
+        drag_off_ = Vec2{float(start_x), float(start_y)};
+        draw_area.queue_draw();
+      });
+    [[maybe_unused]] auto drag_end_conn =
+      drag->signal_drag_end().connect([this](double start_x, double start_y) {
+        off_ = off_ - Vec2{float(start_x), float(start_y)} / doc_factor();
+        drag_off_ = {0.F};
+        draw_area.queue_draw();
+      });
+    draw_area.add_controller(drag);
+  }
+
+  float doc_factor(Dims<float> dims, Rect<float> rect) const {
+    return std::min(dims.w / rect.w(), dims.h / rect.h()) * scale_;
+  }
+  float doc_factor() const {
+    if (!pdf.has_value() || !pdf->page_info.has_value()) {
+      return 0.F;
+    }
+
+    const Dims dims_base{draw_area.get_width(), draw_area.get_height()};
+    const Dims dims = dims_base;
+    const auto& pinfo = pdf->page_info;
+    const Rect rect{pinfo->page.fz_bound_page()};
+
+    return doc_factor(Dims<float>(dims), rect);
+  }
+
+  void reset_transform() {
+    scale_ = 1.F;
+    off_ = {0.F, 0.F};
+    drag_off_ = {0.F, 0.F};
   }
 
   void load_pdf(std::filesystem::path p) {
