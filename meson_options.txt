@@ -1,0 +1,10 @@
+option(
+  'opengl',
+  type: 'boolean',
+  value: true,
+)
+option(
+  'print',
+  type: 'boolean',
+  value: true,
+)

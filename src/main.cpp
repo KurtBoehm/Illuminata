@@ -7,13 +7,10 @@
 
 #include "hirgon/hirgon.hpp"
 
-#define OPENGL true
-#define PRINT true
-
-#if OPENGL
+#if HIRGON_OPENGL
 #include <array>
 #endif
-#if PRINT
+#if HIRGON_PRINT
 #include <chrono>
 #endif
 
@@ -30,7 +27,7 @@ struct PdfInfo {
 
   explicit PdfInfo(std::filesystem::path pdf, int pno = 0)
       : path{std::move(pdf)}, doc{path.c_str()}, page{pno} {
-#if PRINT
+#if HIRGON_PRINT
     fmt::print("Open {:?}\n", path);
 #endif
     update_page(pno);
@@ -39,7 +36,7 @@ struct PdfInfo {
   void update_page(int pno) {
     page = pno;
     if (valid_page(pno)) {
-#if PRINT
+#if HIRGON_PRINT
       fmt::print("load page {}\n", pno);
 #endif
       mupdf::FzPage p = doc.fz_load_page(pno);
@@ -59,7 +56,7 @@ struct PdfInfo {
   }
 };
 
-#if OPENGL
+#if HIRGON_OPENGL
 inline constexpr std::array<GLfloat, 24> vertex_data{
   -1.F, 1.F,  0.F, 1.F, // vertex 0
   1.F,  -1.F, 0.F, 1.F, // vertex 1
@@ -117,9 +114,9 @@ struct PDFViewer : public Gtk::ApplicationWindow {
   std::optional<PdfInfo> pdf{};
   bool invert{};
 
-  std::conditional_t<OPENGL, Gtk::GLArea, Gtk::DrawingArea> draw_area{};
+  std::conditional_t<HIRGON_OPENGL, Gtk::GLArea, Gtk::DrawingArea> draw_area{};
   Gtk::Button open_button{"Open PDF"};
-#if OPENGL
+#if HIRGON_OPENGL
   std::optional<gl::Program> prog{};
   std::optional<gl::VertexArray> vtxs{};
   std::optional<gl::Texture> tex{};
@@ -136,7 +133,7 @@ struct PDFViewer : public Gtk::ApplicationWindow {
     [[maybe_unused]] auto dark_conn = prefer_dark_theme.signal_changed().connect(
       [this, prefer_dark_theme] { invert = prefer_dark_theme.get_value(); });
 
-#if OPENGL
+#if HIRGON_OPENGL
     [[maybe_unused]] auto realize_conn = draw_area.signal_realize().connect([&] {
       draw_area.make_current();
       if (draw_area.has_error()) {
@@ -186,14 +183,14 @@ struct PDFViewer : public Gtk::ApplicationWindow {
 #else
     auto draw_op = [&](const std::shared_ptr<Cairo::Context>& ctx, int width, int height) {
 #endif
-#if PRINT
+#if HIRGON_PRINT
       using Clock = std::chrono::steady_clock;
       using Dur = std::chrono::duration<double>;
       const auto t0 = Clock::now();
 #endif
 
       const auto scale_factor = draw_area.get_scale_factor();
-#if OPENGL
+#if HIRGON_OPENGL
       const auto width = draw_area.get_width();
       const auto height = draw_area.get_height();
 #else
@@ -203,10 +200,10 @@ struct PDFViewer : public Gtk::ApplicationWindow {
       const auto h = height * scale_factor;
 
       if (!pdf.has_value() || !pdf->page_info.has_value()) {
-#if OPENGL
+#if HIRGON_OPENGL
         return false;
 #else
-        return
+        return;
 #endif
       }
 
@@ -215,7 +212,7 @@ struct PDFViewer : public Gtk::ApplicationWindow {
       const auto f = std::min(float(w) / std::max(0.F, rect.x1 - rect.x0),
                               float(h) / std::max(0.F, rect.y1 - rect.y0));
 
-#if PRINT
+#if HIRGON_PRINT
       const auto t1 = Clock::now();
 #endif
 
@@ -226,11 +223,11 @@ struct PDFViewer : public Gtk::ApplicationWindow {
         0,
       };
 
-#if PRINT
+#if HIRGON_PRINT
       const auto t2 = Clock::now();
 #endif
 
-#if OPENGL
+#if HIRGON_OPENGL
       glClearColor(0.5, 0.5, 0.5, 1.0);
       glClear(GL_COLOR_BUFFER_BIT);
       {
@@ -243,7 +240,7 @@ struct PDFViewer : public Gtk::ApplicationWindow {
           gl::TextureUnit tu{0};
           auto& tx = *tex;
           tu.bind(tx);
-#if PRINT
+#if HIRGON_PRINT
           fmt::print("load: {}×{}×{}\n", pix.w(), pix.h(), pix.s());
 #endif
           tx.load(pix.samples(), pix.w(), pix.h(), gl::PixelFormat::RGB);
@@ -268,7 +265,7 @@ struct PDFViewer : public Gtk::ApplicationWindow {
       }
       glFlush();
 
-#if PRINT
+#if HIRGON_PRINT
       const auto t3 = Clock::now();
       fmt::print("{}×{} → {}×{} → {} → {}×{} {}\n", width, height, w, h, f, pix.w(), pix.h(),
                  pix.alpha());
@@ -282,20 +279,20 @@ struct PDFViewer : public Gtk::ApplicationWindow {
       auto pixbuf = Gdk::Pixbuf::create_from_data(
         pix.samples(), Gdk::Colorspace::RGB, bool(pix.alpha()), 8, pix.w(), pix.h(), pix.stride());
 
-#if PRINT
+#if HIRGON_PRINT
       const auto t3 = Clock::now();
 #endif
 
       Gdk::Cairo::set_source_pixbuf(ctx, pixbuf, float(w - pix.w()) / 2.F,
                                     float(h - pix.h()) / 2.F);
 
-#if PRINT
+#if HIRGON_PRINT
       const auto t4 = Clock::now();
 #endif
 
       ctx->paint();
 
-#if PRINT
+#if HIRGON_PRINT
       const auto t5 = Clock::now();
       fmt::print("{}×{} → {}×{} → {} → {}×{} {}\n", width, height, w, h, f, pix.fz_pixmap_width(),
                  pix.fz_pixmap_height(), pix.alpha());

@@ -18,10 +18,18 @@ mupdf_dep = dependency('mupdf')
 cpp = meson.get_compiler('cpp')
 mupdfcpp_deps = cpp.find_library('mupdfcpp')
 
+opengl = get_option('opengl')
+print = get_option('print')
+args = [
+  f'-DHIRGON_OPENGL=@opengl@',
+  f'-DHIRGON_PRINT=@print@',
+]
+
 executable(
   'hirgon',
   'src/main.cpp',
   install: true,
   include_directories: ['include'],
+  cpp_args: args,
   dependencies: [epoxy_dep, fmt_dep, gtkmm_dep, libadwaita_dep, mupdf_dep] + mupdfcpp_deps,
 )
