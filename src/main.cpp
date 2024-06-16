@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <cmath>
+#include <cstdlib>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -56,24 +58,151 @@ struct PdfInfo {
   }
 };
 
+template<typename T>
+struct Vec2 {
+  T x, y;
+
+  Vec2(T v) : x{v}, y{v} {} // NOLINT(hicpp-explicit-conversions)
+  Vec2(T x, T y) : x{x}, y{y} {}
+
+  template<typename TF>
+  friend Vec2<std::common_type_t<T, TF>> operator*(Vec2 v, TF f) {
+    return {v.x * f, v.y * f};
+  }
+  template<typename TF>
+  friend Vec2<std::common_type_t<T, TF>> operator/(Vec2 v, TF f) {
+    return {v.x / f, v.y / f};
+  }
+  template<typename TF>
+  friend Vec2<std::common_type_t<T, TF>> operator+(Vec2 v1, Vec2<TF> v2) {
+    return {v1.x + v2.x, v1.y + v2.y};
+  }
+  template<typename TF>
+  friend Vec2<std::common_type_t<T, TF>> operator-(Vec2 v1, Vec2<TF> v2) {
+    return {v1.x - v2.x, v1.y - v2.y};
+  }
+
+  [[nodiscard]] Vec2 max(Vec2 v) const {
+    return {std::max(x, v.x), std::max(y, v.y)};
+  }
+};
+template<typename T>
+struct fmt::formatter<Vec2<T>> : nested_formatter<T> {
+  auto format(Vec2<T> v, format_context& ctx) const {
+    return this->write_padded(ctx, [this, v](auto out) {
+      return fmt::format_to(out, "({},{})", this->nested(v.x), this->nested(v.y));
+    });
+  }
+};
+
+template<typename T>
+struct Dims {
+  T w, h;
+
+  template<typename TF>
+  friend Dims<std::common_type_t<T, TF>> operator*(Dims d, TF f) {
+    return {d.w * f, d.h * f};
+  }
+  template<typename TF>
+  friend Dims<std::common_type_t<T, TF>> operator/(Dims d, TF f) {
+    return {d.w / f, d.h / f};
+  }
+
+  [[nodiscard]] Vec2<T> center() const {
+    return {w / T{2}, h / T{2}};
+  }
+};
+template<typename T>
+struct fmt::formatter<Dims<T>> : nested_formatter<T> {
+  auto format(Dims<T> d, format_context& ctx) const {
+    return this->write_padded(ctx, [this, d](auto out) {
+      return fmt::format_to(out, "{}×{}", this->nested(d.w), this->nested(d.h));
+    });
+  }
+};
+
+template<typename T>
+struct Rect {
+  T x_begin, x_end, y_begin, y_end;
+
+  Rect(T x0, T x1, T y0, T y1)
+      : x_begin{std::min(x0, x1)}, x_end{std::max(x0, x1)}, y_begin{std::min(y0, y1)},
+        y_end{std::max(y0, y1)} {}
+  explicit Rect(mupdf::FzRect r) : Rect{r.x0, r.x1, r.y0, r.y1} {}
+  Rect(Dims<T> r) : Rect{0, r.w, 0, r.h} {} // NOLINT(hicpp-explicit-conversions)
+
+  [[nodiscard]] Vec2<T> offset() const {
+    return {x_begin, y_begin};
+  }
+  [[nodiscard]] T w() const {
+    return x_end - x_begin;
+  }
+  [[nodiscard]] T h() const {
+    return y_end - y_begin;
+  }
+
+  [[nodiscard]] Vec2<T> center() const {
+    return {(x_begin + x_end) / T{2}, (y_begin + y_end) / T{2}};
+  }
+
+  [[nodiscard]] Rect intersect(Rect other) const {
+    T x0 = std::max(x_begin, other.x_begin);
+    T x1 = std::max(std::min(x_end, other.x_end), x0);
+    T y0 = std::max(y_begin, other.y_begin);
+    T y1 = std::max(std::min(y_end, other.y_end), y0);
+    return {x0, x1, y0, y1};
+  }
+
+  [[nodiscard]] mupdf::FzRect fz_rect() const {
+    return {x_begin, y_begin, x_end, y_end};
+  }
+
+  template<typename TF>
+  friend Rect<std::common_type_t<T, TF>> operator+(Rect r, Vec2<TF> v) {
+    return {r.x_begin + v.x, r.x_end + v.x, r.y_begin + v.y, r.y_end + v.y};
+  }
+  template<typename TF>
+  friend Rect<std::common_type_t<T, TF>> operator-(Rect r, Vec2<TF> v) {
+    return {r.x_begin - v.x, r.x_end - v.x, r.y_begin - v.y, r.y_end - v.y};
+  }
+  template<typename TF>
+  friend Rect<std::common_type_t<T, TF>> operator*(Rect d, TF f) {
+    return {d.x_begin * f, d.x_end * f, d.y_begin * f, d.y_end * f};
+  }
+  template<typename TF>
+  friend Rect<std::common_type_t<T, TF>> operator/(Rect d, TF f) {
+    return {d.x_begin / f, d.x_end / f, d.y_begin / f, d.y_end / f};
+  }
+};
+Rect(mupdf::FzRect) -> Rect<float>;
+template<typename T>
+struct fmt::formatter<Rect<T>> : nested_formatter<T> {
+  auto format(Rect<T> d, format_context& ctx) const {
+    return this->write_padded(ctx, [this, d](auto out) {
+      return fmt::format_to(out, "({},{};{},{})", this->nested(d.x_begin), this->nested(d.x_end),
+                            this->nested(d.y_begin), this->nested(d.y_end));
+    });
+  }
+};
+
 #if HIRGON_OPENGL
-inline constexpr std::array<GLfloat, 24> vertex_data{
-  -1.F, 1.F,  0.F, 1.F, // vertex 0
-  1.F,  -1.F, 0.F, 1.F, // vertex 1
-  -1.F, -1.,  0.F, 1.F, // vertex 2
-  -1.F, 1.F,  0.F, 1.F, // vertex 3
-  1.F,  1.F,  0.F, 1.F, // vertex 4
-  1.F,  -1.F, 0.F, 1.F, // vertex 5
+inline constexpr std::array<GLfloat, 12> vertex_data{
+  -1.F, +1.F, // vertex 0
+  +1.F, -1.F, // vertex 1
+  -1.F, -1.F, // vertex 2
+  -1.F, +1.F, // vertex 3
+  +1.F, +1.F, // vertex 4
+  +1.F, -1.F, // vertex 5
 };
 
 inline constexpr char vertex_shader_code[] = "#version 320\n"
                                              "\n"
-                                             "layout(location = 0) in vec4 position;\n"
+                                             "layout(location = 0) in vec2 position;\n"
                                              "out vec2 tex_coord;\n"
                                              "\n"
                                              "void main() {\n"
-                                             "  gl_Position = position;\n"
-                                             "  tex_coord = 0.5 * position.xy + 0.5;\n"
+                                             "  gl_Position = vec4(position, 0.0, 1.0);\n"
+                                             "  tex_coord = 0.5 * position + 0.5;\n"
                                              "}";
 
 inline constexpr char fragment_shader_code[] =
@@ -116,6 +245,10 @@ struct PDFViewer : public Gtk::ApplicationWindow {
 
   std::conditional_t<HIRGON_OPENGL, Gtk::GLArea, Gtk::DrawingArea> draw_area{};
   Gtk::Button open_button{"Open PDF"};
+
+  float scale_{1.F};
+  Vec2<float> off_{0.F, 0.F};
+
 #if HIRGON_OPENGL
   std::optional<gl::Program> prog{};
   std::optional<gl::VertexArray> vtxs{};
@@ -196,8 +329,8 @@ struct PDFViewer : public Gtk::ApplicationWindow {
 #else
       ctx->scale(1.0 / scale_factor, 1.0 / scale_factor);
 #endif
-      const auto w = width * scale_factor;
-      const auto h = height * scale_factor;
+      const Dims dims_base{width, height};
+      const Dims dims = dims_base * scale_factor;
 
       if (!pdf.has_value() || !pdf->page_info.has_value()) {
 #if HIRGON_OPENGL
@@ -208,20 +341,34 @@ struct PDFViewer : public Gtk::ApplicationWindow {
       }
 
       const auto& pinfo = pdf->page_info;
-      const auto rect = pinfo->page.fz_bound_page();
-      const auto f = std::min(float(w) / std::max(0.F, rect.x1 - rect.x0),
-                              float(h) / std::max(0.F, rect.y1 - rect.y0));
+      const Rect rect{pinfo->page.fz_bound_page()};
+      const float f =
+        std::min(float(dims.w) / std::abs(rect.w()), float(dims.h) / std::abs(rect.h())) * scale_;
+      const auto mat = mupdf::FzMatrix{}.fz_pre_scale(f, f);
+
+      // In document coordinates
+      const auto area_dims = dims / f;
+      const auto view_area = Rect{area_dims} - area_dims.center() + rect.center() + off_;
+      const auto inter = view_area.intersect(rect);
+      const auto off = (inter.offset() - view_area.offset()) * f;
+      fmt::print("rect={}, area_dims={}, view_area={}, inter={}, off={}\n", rect, area_dims,
+                 view_area, inter, off);
+
+      auto rclip = inter.fz_rect();
+      auto irect = rclip.fz_transform_rect(mat).fz_round_rect();
 
 #if HIRGON_PRINT
       const auto t1 = Clock::now();
 #endif
 
-      mupdf::FzPixmap pix{
-        pinfo->display_list,
-        mupdf::FzMatrix{}.fz_pre_scale(f, f),
-        mupdf::FzColorspace::Fixed_RGB,
-        0,
-      };
+      mupdf::FzPixmap pix{mupdf::FzColorspace::Fixed_RGB, irect, mupdf::FzSeparations{}, 0};
+      pix.fz_clear_pixmap_with_value(0xFF);
+      {
+        mupdf::FzDevice dev{mat, pix, irect};
+        mupdf::FzCookie cookie{};
+        pinfo->display_list.fz_run_display_list(dev, mupdf::FzMatrix{}, rclip, cookie);
+        dev.fz_close_device();
+      }
 
 #if HIRGON_PRINT
       const auto t2 = Clock::now();
@@ -249,8 +396,8 @@ struct PDFViewer : public Gtk::ApplicationWindow {
 
         {
           std::array<GLint, 4> arr{
-            GLint(w - pix.w()) / 2,
-            GLint(h - pix.h()) / 2,
+            GLint(std::round(off.x)),
+            GLint(std::round(off.y)),
             pix.w(),
             pix.h(),
           };
@@ -259,7 +406,7 @@ struct PDFViewer : public Gtk::ApplicationWindow {
         }
 
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
         glDrawArrays(GL_TRIANGLES, 0, vertex_data.size());
         glDisableVertexAttribArray(0);
       }
@@ -267,8 +414,7 @@ struct PDFViewer : public Gtk::ApplicationWindow {
 
 #if HIRGON_PRINT
       const auto t3 = Clock::now();
-      fmt::print("{}×{} → {}×{} → {} → {}×{} {}\n", width, height, w, h, f, pix.w(), pix.h(),
-                 pix.alpha());
+      fmt::print("{} → {} → {} → {}×{} {}\n", dims_base, dims, f, pix.w(), pix.h(), pix.alpha());
       fmt::print("setup={}, pixmap={}, opengl={}\n", Dur{t1 - t0}, Dur{t2 - t1}, Dur{t3 - t2});
 #endif
 
@@ -283,8 +429,7 @@ struct PDFViewer : public Gtk::ApplicationWindow {
       const auto t3 = Clock::now();
 #endif
 
-      Gdk::Cairo::set_source_pixbuf(ctx, pixbuf, float(w - pix.w()) / 2.F,
-                                    float(h - pix.h()) / 2.F);
+      Gdk::Cairo::set_source_pixbuf(ctx, pixbuf, off.x, off.y);
 
 #if HIRGON_PRINT
       const auto t4 = Clock::now();
@@ -294,8 +439,7 @@ struct PDFViewer : public Gtk::ApplicationWindow {
 
 #if HIRGON_PRINT
       const auto t5 = Clock::now();
-      fmt::print("{}×{} → {}×{} → {} → {}×{} {}\n", width, height, w, h, f, pix.fz_pixmap_width(),
-                 pix.fz_pixmap_height(), pix.alpha());
+      fmt::print("{} → {} → {} → {}×{} {}\n", dims_base, dims, f, pix.w(), pix.h(), pix.alpha());
       fmt::print("setup={}, pixmap={}, pixbuf={}, cairo={}, paint={}\n", Dur{t1 - t0}, Dur{t2 - t1},
                  Dur{t3 - t2}, Dur{t4 - t3}, Dur{t5 - t4});
 #endif
@@ -356,6 +500,26 @@ struct PDFViewer : public Gtk::ApplicationWindow {
     [[maybe_unused]] auto evk_conn = evk->signal_key_pressed().connect(
       [&](guint keyval, [[maybe_unused]] guint keycode, [[maybe_unused]] Gdk::ModifierType state) {
         switch (keyval) {
+        case GDK_KEY_w: {
+          off_.y -= 1.F;
+          draw_area.queue_draw();
+          return true;
+        }
+        case GDK_KEY_a: {
+          off_.x -= 1.F;
+          draw_area.queue_draw();
+          return true;
+        }
+        case GDK_KEY_s: {
+          off_.y += 1.F;
+          draw_area.queue_draw();
+          return true;
+        }
+        case GDK_KEY_d: {
+          off_.x += 1.F;
+          draw_area.queue_draw();
+          return true;
+        }
         case GDK_KEY_Right:
         case GDK_KEY_Down:
         case GDK_KEY_Page_Down: {
@@ -366,6 +530,25 @@ struct PDFViewer : public Gtk::ApplicationWindow {
         case GDK_KEY_Up:
         case GDK_KEY_Page_Up: {
           navigate_pages(-1);
+          return true;
+        }
+        case GDK_KEY_KP_Add:
+        case GDK_KEY_plus: {
+          scale_ *= 1.1F;
+          draw_area.queue_draw();
+          return true;
+        }
+        case GDK_KEY_KP_Subtract:
+        case GDK_KEY_minus: {
+          scale_ *= 0.9F;
+          draw_area.queue_draw();
+          return true;
+        }
+        case GDK_KEY_KP_0:
+        case GDK_KEY_0: {
+          scale_ = 1.F;
+          off_ = {0.F, 0.F};
+          draw_area.queue_draw();
           return true;
         }
         case GDK_KEY_Escape: {
