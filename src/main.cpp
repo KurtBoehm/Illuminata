@@ -614,6 +614,17 @@ struct PDFViewer : public Gtk::ApplicationWindow {
         draw_area.queue_draw();
       });
     draw_area.add_controller(drag);
+
+    auto scroll = Gtk::EventControllerScroll::create();
+    scroll->set_flags(Gtk::EventControllerScroll::Flags::VERTICAL);
+    [[maybe_unused]] auto scroll_conn = scroll->signal_scroll().connect(
+      [this](double /*dx*/, double dy) {
+        scale_ *= 1.F - 0.1F * float(dy);
+        draw_area.queue_draw();
+        return true;
+      },
+      true);
+    draw_area.add_controller(scroll);
   }
 
   float doc_factor(Dims<float> dims, Rect<float> rect) const {
