@@ -6,6 +6,7 @@
 #include "cairo.hpp"
 #include "fmt.hpp"
 #include "gdk.hpp"
+#include "geometry.hpp"
 #include "gio.hpp"
 #include "glib.hpp"
 #include "gtk.hpp"

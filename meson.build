@@ -13,6 +13,7 @@ fmt_dep = dependency('fmt')
 epoxy_dep = dependency('epoxy')
 gtkmm_dep = dependency('gtkmm-4.0')
 libadwaita_dep = dependency('libadwaita-1')
+libadwaitamm_dep = dependency('libadwaitamm')
 mupdf_dep = dependency('mupdf')
 
 cpp = meson.get_compiler('cpp')
@@ -31,5 +32,13 @@ executable(
   install: true,
   include_directories: ['include'],
   cpp_args: args,
-  dependencies: [epoxy_dep, fmt_dep, gtkmm_dep, libadwaita_dep, mupdf_dep] + mupdfcpp_deps,
+  dependencies: [
+    epoxy_dep,
+    fmt_dep,
+    gtkmm_dep,
+    libadwaita_dep,
+    libadwaitamm_dep,
+    mupdf_dep,
+  ]
+  + mupdfcpp_deps,
 )

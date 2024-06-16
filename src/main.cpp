@@ -58,138 +58,6 @@ struct PdfInfo {
   }
 };
 
-template<typename T>
-struct Vec2 {
-  T x, y;
-
-  Vec2(T v) : x{v}, y{v} {} // NOLINT(hicpp-explicit-conversions)
-  Vec2(T x, T y) : x{x}, y{y} {}
-
-  template<typename TF>
-  friend Vec2<std::common_type_t<T, TF>> operator*(Vec2 v, TF f) {
-    return {v.x * f, v.y * f};
-  }
-  template<typename TF>
-  friend Vec2<std::common_type_t<T, TF>> operator/(Vec2 v, TF f) {
-    return {v.x / f, v.y / f};
-  }
-  template<typename TF>
-  friend Vec2<std::common_type_t<T, TF>> operator+(Vec2 v1, Vec2<TF> v2) {
-    return {v1.x + v2.x, v1.y + v2.y};
-  }
-  template<typename TF>
-  friend Vec2<std::common_type_t<T, TF>> operator-(Vec2 v1, Vec2<TF> v2) {
-    return {v1.x - v2.x, v1.y - v2.y};
-  }
-
-  [[nodiscard]] Vec2 max(Vec2 v) const {
-    return {std::max(x, v.x), std::max(y, v.y)};
-  }
-};
-template<typename T>
-struct fmt::formatter<Vec2<T>> : nested_formatter<T> {
-  auto format(Vec2<T> v, format_context& ctx) const {
-    return this->write_padded(ctx, [this, v](auto out) {
-      return fmt::format_to(out, "({},{})", this->nested(v.x), this->nested(v.y));
-    });
-  }
-};
-
-template<typename T>
-struct Dims {
-  T w, h;
-
-  template<typename TF>
-  friend Dims<std::common_type_t<T, TF>> operator*(Dims d, TF f) {
-    return {d.w * f, d.h * f};
-  }
-  template<typename TF>
-  friend Dims<std::common_type_t<T, TF>> operator/(Dims d, TF f) {
-    return {d.w / f, d.h / f};
-  }
-
-  [[nodiscard]] Vec2<T> center() const {
-    return {w / T{2}, h / T{2}};
-  }
-
-  template<typename TF>
-  explicit operator Dims<TF>() const {
-    return {TF(w), TF(h)};
-  }
-};
-template<typename T>
-struct fmt::formatter<Dims<T>> : nested_formatter<T> {
-  auto format(Dims<T> d, format_context& ctx) const {
-    return this->write_padded(ctx, [this, d](auto out) {
-      return fmt::format_to(out, "{}×{}", this->nested(d.w), this->nested(d.h));
-    });
-  }
-};
-
-template<typename T>
-struct Rect {
-  T x_begin, x_end, y_begin, y_end;
-
-  Rect(T x0, T x1, T y0, T y1)
-      : x_begin{std::min(x0, x1)}, x_end{std::max(x0, x1)}, y_begin{std::min(y0, y1)},
-        y_end{std::max(y0, y1)} {}
-  explicit Rect(mupdf::FzRect r) : Rect{r.x0, r.x1, r.y0, r.y1} {}
-  Rect(Dims<T> r) : Rect{0, r.w, 0, r.h} {} // NOLINT(hicpp-explicit-conversions)
-
-  [[nodiscard]] Vec2<T> offset() const {
-    return {x_begin, y_begin};
-  }
-  [[nodiscard]] T w() const {
-    return x_end - x_begin;
-  }
-  [[nodiscard]] T h() const {
-    return y_end - y_begin;
-  }
-
-  [[nodiscard]] Vec2<T> center() const {
-    return {(x_begin + x_end) / T{2}, (y_begin + y_end) / T{2}};
-  }
-
-  [[nodiscard]] Rect intersect(Rect other) const {
-    T x0 = std::max(x_begin, other.x_begin);
-    T x1 = std::max(std::min(x_end, other.x_end), x0);
-    T y0 = std::max(y_begin, other.y_begin);
-    T y1 = std::max(std::min(y_end, other.y_end), y0);
-    return {x0, x1, y0, y1};
-  }
-
-  [[nodiscard]] mupdf::FzRect fz_rect() const {
-    return {x_begin, y_begin, x_end, y_end};
-  }
-
-  template<typename TF>
-  friend Rect<std::common_type_t<T, TF>> operator+(Rect r, Vec2<TF> v) {
-    return {r.x_begin + v.x, r.x_end + v.x, r.y_begin + v.y, r.y_end + v.y};
-  }
-  template<typename TF>
-  friend Rect<std::common_type_t<T, TF>> operator-(Rect r, Vec2<TF> v) {
-    return {r.x_begin - v.x, r.x_end - v.x, r.y_begin - v.y, r.y_end - v.y};
-  }
-  template<typename TF>
-  friend Rect<std::common_type_t<T, TF>> operator*(Rect d, TF f) {
-    return {d.x_begin * f, d.x_end * f, d.y_begin * f, d.y_end * f};
-  }
-  template<typename TF>
-  friend Rect<std::common_type_t<T, TF>> operator/(Rect d, TF f) {
-    return {d.x_begin / f, d.x_end / f, d.y_begin / f, d.y_end / f};
-  }
-};
-Rect(mupdf::FzRect) -> Rect<float>;
-template<typename T>
-struct fmt::formatter<Rect<T>> : nested_formatter<T> {
-  auto format(Rect<T> d, format_context& ctx) const {
-    return this->write_padded(ctx, [this, d](auto out) {
-      return fmt::format_to(out, "({},{};{},{})", this->nested(d.x_begin), this->nested(d.x_end),
-                            this->nested(d.y_begin), this->nested(d.y_end));
-    });
-  }
-};
-
 #if HIRGON_OPENGL
 inline constexpr std::array<GLfloat, 12> vertex_data{
   -1.F, +1.F, // vertex 0
@@ -203,49 +71,43 @@ inline constexpr std::array<GLfloat, 12> vertex_data{
 inline constexpr char vertex_shader_code[] = "#version 320\n"
                                              "\n"
                                              "layout(location = 0) in vec2 position;\n"
-                                             "out vec2 tex_coord;\n"
                                              "\n"
                                              "void main() {\n"
                                              "  gl_Position = vec4(position, 0.0, 1.0);\n"
-                                             "  tex_coord = 0.5 * position + 0.5;\n"
                                              "}";
 
 inline constexpr char fragment_shader_code[] =
   "#version 320\n"
   "precision mediump float;\n"
   "\n"
-  "in vec2 tex_coord;\n"
   "out vec4 outColor;\n"
   "uniform bool invert;\n"
-  "uniform int area[6];\n"
+  "uniform int area[4];\n"
   "uniform sampler2D tex;\n"
   "\n"
   "void main() {\n"
   "  ivec2 coord = ivec2(gl_FragCoord);\n"
-  "  coord = ivec2(coord.x, area[5] - coord.y - 1);\n"
-  "  coord -= ivec2(area[0], area[1]);\n"
+  "  coord = ivec2(coord.x - area[0], area[1] - coord.y - 1);\n"
   "  if (0 > coord.x || coord.x >= area[2] || 0 > coord.y || coord.y >= area[3]) {\n"
   "    outColor = vec4(0.0);\n"
   "  } else {\n"
   "    outColor = texelFetch(tex, coord, 0);\n"
-#if false
-  "    outColor = texture(tex, tex_coord);\n"
-#endif
   "    if (invert) {\n"
+  "      const float h = 128.0 / 255.0;\n"
   "      float y  = 0.299 * outColor.r + 0.587 * outColor.g + 0.114 * outColor.b;\n"
-  "      float cb = 0.5 - 0.168736 * outColor.r - 0.331264 * outColor.g + 0.5 * outColor.b;\n"
-  "      float cr = 0.5 + 0.5 * outColor.r - 0.418688 * outColor.g - 0.081312 * outColor.b;\n"
+  "      float cb = h - 0.168736 * outColor.r - 0.331264 * outColor.g + 0.5 * outColor.b;\n"
+  "      float cr = h + 0.5 * outColor.r - 0.418688 * outColor.g - 0.081312 * outColor.b;\n"
   "      y = 1.0 - y;\n"
-  "      float r = y + 1.402 * (cr - 0.5);\n"
-  "      float g = y - 0.344136 * (cb - 0.5) - 0.714136 * (cr - 0.5);\n"
-  "      float b = y + 1.772 * (cb - 0.5);\n"
+  "      float r = y + 1.402 * (cr - h);\n"
+  "      float g = y - 0.344136 * (cb - h) - 0.714136 * (cr - h);\n"
+  "      float b = y + 1.772 * (cb - h);\n"
   "      outColor = vec4(r, g, b, outColor.a);\n"
   "    }\n"
   "  }\n"
   "}";
 #endif
 
-struct PDFViewer : public Gtk::ApplicationWindow {
+struct PDFViewer : public Adw::ApplicationWindow {
   std::optional<PdfInfo> pdf{};
   bool invert{};
 
@@ -265,13 +127,14 @@ struct PDFViewer : public Gtk::ApplicationWindow {
   GLint tex_uniform_{};
 #endif
 
-  explicit PDFViewer(std::optional<std::filesystem::path> path = {}) {
+  explicit PDFViewer(Adw::Application& app, std::optional<std::filesystem::path> path = {}) {
     set_title("Hirgon");
+    set_default_size(800, 600);
 
-    auto prefer_dark_theme = get_settings()->property_gtk_application_prefer_dark_theme();
-    invert = prefer_dark_theme.get_value();
-    [[maybe_unused]] auto dark_conn = prefer_dark_theme.signal_changed().connect(
-      [this, prefer_dark_theme] { invert = prefer_dark_theme.get_value(); });
+    auto dark = app.get_style_manager()->property_dark();
+    invert = dark.get_value();
+    [[maybe_unused]] auto dark_conn =
+      dark.signal_changed().connect([this, dark] { invert = dark.get_value(); });
 
 #if HIRGON_OPENGL
     [[maybe_unused]] auto realize_conn = draw_area.signal_realize().connect([&] {
@@ -403,8 +266,11 @@ struct PDFViewer : public Gtk::ApplicationWindow {
 
         {
           glUniform1i(invert_uniform_, static_cast<GLint>(invert));
-          std::array<GLint, 6> arr{
-            GLint(std::round(off.x)), GLint(std::round(off.y)), pix.w(), pix.h(), dims.w, dims.h,
+          std::array<GLint, 4> arr{
+            GLint(std::round(off.x)),
+            dims.h - GLint(std::round(off.y)),
+            pix.w(),
+            pix.h(),
           };
           glUniform1iv(area_uniform_, arr.size(), arr.data());
         }
@@ -453,7 +319,16 @@ struct PDFViewer : public Gtk::ApplicationWindow {
 
     [[maybe_unused]] auto scale_conn =
       draw_area.property_scale_factor().signal_changed().connect([&] { draw_area.queue_draw(); });
-    set_child(draw_area);
+
+    Adw::HeaderBar bar{};
+
+    auto tv = Adw::ToolbarView::create();
+    tv->add_top_bar(bar);
+    tv->set_content(draw_area);
+    tv->set_top_bar_style(Adw::ToolbarStyle::RAISED);
+    [[maybe_unused]] auto conn_extend = property_fullscreened().signal_changed().connect(
+      [this, tv] { tv->set_reveal_top_bars(!is_fullscreen()); });
+    set_content(*tv);
 
     if (path.has_value()) {
       load_pdf(*path);
@@ -461,7 +336,6 @@ struct PDFViewer : public Gtk::ApplicationWindow {
 
     Gtk::Image open_icon{};
     open_icon.set_from_icon_name("document-open");
-
     open_button.set_child(open_icon);
     open_button.set_focusable(false);
     [[maybe_unused]] auto open_conn = open_button.signal_clicked().connect([&]() {
@@ -495,10 +369,7 @@ struct PDFViewer : public Gtk::ApplicationWindow {
         }
       });
     });
-
-    Gtk::HeaderBar bar{};
-    bar.pack_end(open_button);
-    set_titlebar(bar);
+    bar.pack_start(open_button);
 
     auto evk = Gtk::EventControllerKey::create();
     [[maybe_unused]] auto evk_conn = evk->signal_key_pressed().connect(
@@ -522,6 +393,12 @@ struct PDFViewer : public Gtk::ApplicationWindow {
         case GDK_KEY_d: {
           off_.x += 1.F;
           draw_area.queue_draw();
+          return true;
+        }
+        case GDK_KEY_m: {
+          auto style_manager = app.get_style_manager();
+          style_manager->set_color_scheme(style_manager->get_dark() ? Adw::ColorScheme::FORCE_LIGHT
+                                                                    : Adw::ColorScheme::FORCE_DARK);
           return true;
         }
         case GDK_KEY_Right:
@@ -672,8 +549,8 @@ int main(int argc, char* argv[]) {
 
   adw_init();
 
-  auto app = Gtk::Application::create("org.kurbo96.hirgon");
+  auto app = Adw::Application::create("org.kurbo96.hirgon", Gio::Application::Flags::DEFAULT_FLAGS);
 
   auto path = (argc > 1) ? std::make_optional<std::filesystem::path>(argv[1]) : std::nullopt;
-  return app->make_window_and_run<PDFViewer>(0, nullptr, path);
+  return app->make_window_and_run<PDFViewer>(0, nullptr, *app, path);
 }
