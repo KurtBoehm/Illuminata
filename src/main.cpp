@@ -7,10 +7,20 @@
 #include <type_traits>
 #include <utility>
 
+#include <gdk/gdkkeysyms.h>
+#include <gdkmm.h>
+#include <giomm.h>
+#include <glib.h>
+#include <glibmm.h>
+#include <gtkmm.h>
+#include <libadwaitamm.h>
+
 #include "hirgon/hirgon.hpp"
 
 #if HIRGON_OPENGL
 #include <array>
+#else
+#include <cairomm/cairomm.h>
 #endif
 #if HIRGON_PRINT
 #include <chrono>
@@ -334,6 +344,32 @@ struct PDFViewer : public Adw::ApplicationWindow {
       load_pdf(*path);
     }
 
+    Gtk::PopoverMenu popover{};
+
+    auto menu = Gio::Menu::create();
+    auto item0 = Gio::MenuItem::create("a", Glib::ustring{});
+    item0->set_action("win.item0");
+    menu->append_item(item0);
+    menu->append("B");
+    popover.set_menu_model(menu);
+
+    auto action0 = Gio::SimpleAction::create_bool("item0", true);
+    action0->set_enabled();
+    [[maybe_unused]] auto action0_conn =
+      action0->signal_activate().connect([action0](const Glib::VariantBase& /*var*/) {
+        bool state{};
+        action0->get_state(state);
+        action0->change_state(!state);
+      });
+    auto group = Gio::SimpleActionGroup::create();
+    group->add_action(action0);
+    this->insert_action_group("win", group);
+
+    Gtk::MenuButton menu_button{};
+    menu_button.set_icon_name("open-menu-symbolic");
+    menu_button.set_menu_model(menu);
+    bar.pack_end(menu_button);
+
     Gtk::Image open_icon{};
     open_icon.set_from_icon_name("document-open");
     open_button.set_child(open_icon);
@@ -546,8 +582,6 @@ int main(int argc, char* argv[]) {
   if (argc > 2) {
     fmt::print(stderr, "Usage: {} [PDF Path]", argv[0]);
   }
-
-  adw_init();
 
   auto app = Adw::Application::create("org.kurbo96.hirgon", Gio::Application::Flags::DEFAULT_FLAGS);
 
