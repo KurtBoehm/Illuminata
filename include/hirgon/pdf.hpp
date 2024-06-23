@@ -5,6 +5,7 @@
 #include "pdf/info.hpp"
 #include "pdf/opengl.hpp"
 #include "pdf/transform.hpp"
+#include "pdf/window.hpp"
 // IWYU pragma: end_exports
 
 #endif // INCLUDE_HIRGON_PDF_HPP
