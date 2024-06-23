@@ -9,11 +9,23 @@ project(
   },
 )
 
+i18n = import('i18n')
+gnome = import('gnome')
+desktop_file_validate = find_program('desktop-file-validate', required: false)
+
+application_id = 'org.kurbo96.Hirgon'
+prefix = get_option('prefix')
+datadir = prefix / get_option('datadir')
+iconsdir = datadir / 'icons'
+podir = meson.project_source_root() / 'po'
+
+subdir('data')
+
 fmt_dep = dependency('fmt')
 epoxy_dep = dependency('epoxy')
 gtkmm_dep = dependency('gtkmm-4.0')
 libadwaita_dep = dependency('libadwaita-1')
-libadwaitamm_dep = dependency('libadwaitamm')
+libadwaitamm_dep = dependency('libadwaitamm-1')
 mupdf_dep = dependency('mupdf')
 
 cpp = meson.get_compiler('cpp')
@@ -41,4 +53,9 @@ executable(
     mupdf_dep,
   ]
   + mupdfcpp_deps,
+)
+
+gnome.post_install(
+  gtk_update_icon_cache: true,
+  update_desktop_database: true,
 )

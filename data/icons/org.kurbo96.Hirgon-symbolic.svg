@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16">
-  <g fill="none" opacity=".34902">
+  <g opacity=".34902">
     <path fill="#2e3436" d="M1 2h14v11H1zm2 2a1 1 90 0 0-1 1v5a1 1 90 0 0 1 1h10a1 1 90 0 0 1-1V5a1 1 90 0 0-1-1z" />
-    <path stroke="#2e3436" stroke-linecap="round" stroke-linejoin="round"
+    <path fill="none" stroke="#2e3436" stroke-linecap="round" stroke-linejoin="round"
       d="M3.5 9.5h2m2 0h5m-8-2 2-2 2 2M8 7l1-1 1.5 1.5" />
     <circle cx="11" cy="5.5" r="1" fill="#2e3436" />
   </g>

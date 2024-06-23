@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Hirgon
+Comment=PDF Viewer
+Exec=hirgon %U
+Icon=@icon@
+Terminal=false
+Type=Application
+StartupNotify=true
+Categories=Utility;GTK;GNOME;
+MimeType=application/pdf;
+StartupWMClass=org.kurbo96.hirgon

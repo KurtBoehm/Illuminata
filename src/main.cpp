@@ -140,6 +140,7 @@ struct PDFViewer : public Adw::ApplicationWindow {
 
   explicit PDFViewer(Adw::Application& app, std::optional<std::filesystem::path> path = {}) {
     set_title("Hirgon");
+    set_icon_name("org.kurbo96.Hirgon");
     set_default_size(800, 600);
 
     auto dark = app.get_style_manager()->property_dark();
@@ -369,7 +370,7 @@ struct PDFViewer : public Adw::ApplicationWindow {
       [this, about_action](const Glib::VariantBase& /*var*/) {
         fmt::print("dialog\n");
         Adw::AboutDialog dialog{};
-        dialog.set_application_icon("org.gnome.Evince");
+        dialog.set_application_icon("org.kurbo96.Hirgon");
         dialog.set_application_name("Hirgon");
         dialog.set_developer_name("Kurt Böhm");
         dialog.set_developers({"Kurt Böhm <kurbo96@gmail.com>"});

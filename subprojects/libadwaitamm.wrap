@@ -1,7 +1,0 @@
-[wrap-git]
-url = git@github.com:Fingolfin1196/libadwaitamm.git
-revision = head
-clone-recursive = true
-
-[provide]
-libadwaitamm = libadwaitamm_dep
