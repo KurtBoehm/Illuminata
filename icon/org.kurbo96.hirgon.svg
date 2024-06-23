@@ -1,59 +1,44 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg height="128" viewBox="0 0 128 128" width="128" xmlns="http://www.w3.org/2000/svg"
-  xmlns:xlink="http://www.w3.org/1999/xlink">
-  <linearGradient id="gradBar" x1="0%" y1="0%" x2="0%" y2="100%">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="128" height="128">
+  <linearGradient id="c" x1="0%" x2="0%" y1="0%" y2="100%">
     <stop offset="0%" stop-color="#ccc" />
     <stop offset="33%" stop-color="#eee" />
     <stop offset="100%" stop-color="#999" />
   </linearGradient>
-  <linearGradient id="gradBg" x1="0%" y1="0%" x2="0%" y2="100%">
+  <linearGradient id="b" x1="0%" x2="0%" y1="0%" y2="100%">
     <stop offset="0%" stop-color="#555" />
     <stop offset="100%" stop-color="#444" />
   </linearGradient>
-
-  <radialGradient id="gradOverheadBg" cx="64" cy="64" gradientUnits="userSpaceOnUse" r="96">
+  <radialGradient id="d" cx="64" cy="64" r="96" gradientUnits="userSpaceOnUse">
     <stop offset="0" stop-color="#fff" />
     <stop offset="1" stop-color="#ffe199" />
   </radialGradient>
-  <linearGradient id="gradPhotoBg" x1="90" x2="32" y1="90" y2="42" gradientUnits="userSpaceOnUse">
+  <linearGradient id="e" x1="90" x2="32" y1="90" y2="42" gradientUnits="userSpaceOnUse">
     <stop offset="0" stop-color="#ffa348" />
-    <stop offset="0.5" stop-color="#c061cb" />
+    <stop offset=".5" stop-color="#c061cb" />
     <stop offset="1" stop-color="#1c71d8" />
   </linearGradient>
-  <linearGradient id="gradPhotoB" gradientUnits="userSpaceOnUse">
+  <linearGradient id="a" gradientUnits="userSpaceOnUse">
     <stop offset="0" stop-color="#fff" />
     <stop offset="1" stop-color="#fff" stop-opacity="0" />
   </linearGradient>
-  <linearGradient xlink:href="#gradPhotoB" x1="30" x2="30" y1="0" y2="58.5" id="gradPhoto1" />
-  <linearGradient xlink:href="#gradPhotoB" x1="16" x2="16" y1="0" y2="28.9" id="gradPhoto2" />
-  <linearGradient xlink:href="#gradPhotoB" x1="0" x2="0" y1="54.25" y2="69.25" id="gradPhoto3" />
-  <clipPath id="photoClip">
-    <rect x="32" y="48" width="64" height="40" rx="4" />
+  <linearGradient xlink:href="#a" id="h" x1="30" x2="30" y1="0" y2="58" />
+  <linearGradient xlink:href="#a" id="i" x1="16" x2="16" y1="0" y2="29" />
+  <linearGradient xlink:href="#a" id="g" x1="0" x2="0" y1="54" y2="69" />
+  <clipPath id="f">
+    <rect width="64" height="40" x="32" y="48" rx="4" />
   </clipPath>
-
-  <!--Ring-->
-  <circle cx="64" cy="121" r="4" stroke-width="2" fill="none" stroke="#555" />
-  <!--Projector Screen-->
-  <rect x="12" y="32" width="104" height="82" fill="url(#gradBg)" />
-  <!--Screen Bars-->
-  <rect x="8" y="28" width="112" height="8" rx="4" fill="url(#gradBar)" />
-  <rect x="8" y="112" width="112" height="4" rx="2" fill="url(#gradBar)" />
-  <!--Overhead Background-->
-  <rect x="16" y="40" width="96" height="68" rx="4" ry="4" fill="url(#gradOverheadBg)" />
-  <!--Pseudo-Text-->
-  <g stroke="#000" stroke-opacity="0.7" stroke-width="4" stroke-linecap="round">
-    <line x1="36" x2="52" y1="98" y2="98" />
-    <line x1="60" x2="92" y1="98" y2="98" />
-  </g>
-  <!--Pseudo-Photo-->
-  <g opacity="0.9">
-    <rect x="32" y="48" width="64" height="40" rx="4" fill="url(#gradPhotoBg)" />
-    <g clip-path="url(#photoClip)">
-      <circle cx="80" cy="60" r="8" fill="url(#gradPhoto3)" fill-opacity="0.75" />
-      <rect width="60" height="60" rx="8" transform="translate(44 64) rotate(45)" fill="url(#gradPhoto1)"
-        fill-opacity="0.568" />
-      <rect width="60" height="60" rx="8" transform="translate(68 72) rotate(45)" fill="url(#gradPhoto2)"
-        fill-opacity="0.363" />
+  <circle cx="64" cy="121" r="4" fill="none" stroke="#555" stroke-width="2" />
+  <path fill="url(#b)" d="M12 32h104v82H12z" />
+  <rect width="112" height="8" x="8" y="28" fill="url(#c)" rx="4" />
+  <rect width="112" height="4" x="8" y="112" fill="url(#c)" rx="2" />
+  <rect width="96" height="68" x="16" y="40" fill="url(#d)" rx="4" ry="4" />
+  <path stroke="#000" stroke-linecap="round" stroke-opacity=".7" stroke-width="4" d="M36 98h16m8 0h32" />
+  <g opacity=".9">
+    <rect width="64" height="40" x="32" y="48" fill="url(#e)" rx="4" />
+    <g clip-path="url(#f)">
+      <circle cx="80" cy="60" r="8" fill="url(#g)" fill-opacity=".75" />
+      <rect width="60" height="60" fill="url(#h)" fill-opacity=".568" rx="8" transform="translate(44 64) rotate(45)" />
+      <rect width="60" height="60" fill="url(#i)" fill-opacity=".363" rx="8" transform="translate(68 72) rotate(45)" />
     </g>
   </g>
 </svg>
