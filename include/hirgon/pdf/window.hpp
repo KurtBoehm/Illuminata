@@ -16,6 +16,7 @@
 #include <glibmm.h>
 #include <gtkmm.h>
 #include <libadwaitamm.h>
+#include <vector>
 
 #include "hirgon/fmt.hpp"
 #include "hirgon/geometry.hpp"
@@ -184,24 +185,81 @@ struct PDFViewer : public Adw::ApplicationWindow {
     }
 
     Gtk::PopoverMenu popover{};
-
     auto menu = Gio::Menu::create();
-    auto item0 = Gio::MenuItem::create("a", Glib::ustring{});
-    item0->set_action("win.item0");
-    menu->append_item(item0);
-    menu->append("About", "win.item1");
+    menu->append("Navigation", "win.navigation");
+    menu->append("About", "win.about");
     popover.set_menu_model(menu);
 
-    auto action0 = Gio::SimpleAction::create_bool("item0", true);
-    action0->set_enabled();
-    [[maybe_unused]] auto action0_conn =
-      action0->signal_activate().connect([action0](const Glib::VariantBase& /*var*/) {
-        bool state{};
-        action0->get_state(state);
-        action0->change_state(!state);
+    auto kb_action = Gio::SimpleAction::create("navigation");
+    kb_action->set_enabled();
+    [[maybe_unused]] auto kb_conn =
+      kb_action->signal_activate().connect([](const Glib::VariantBase& /*var*/) {
+        using Kv = std::pair<const char*, const char*>;
+        struct Group {
+          const char* name;
+          std::vector<Kv> kv{};
+        };
+
+        auto* win = Gtk::make_managed<Gtk::ShortcutsWindow>();
+
+        Gtk::ShortcutsSection sec{};
+        win->add_section(sec);
+
+        for (const auto& [gname, gkv] : std::vector<Group>{
+               {
+                 "General",
+                 {
+                   {"r", "Reload"},
+                   {"c", "Toggle Cursor"},
+                   {"F11", "Toggle Fullscreen"},
+                   {"Escape", "Unfullscreen or Close"},
+                   {"q", "Close"},
+                 },
+               },
+               {
+                 "Visual Style",
+                 {
+                   {"i", "Toggle Inverted Brightness"},
+                   {"m", "Switch Color Scheme"},
+                   {"<Shift>m", "Revert Color Scheme"},
+                 },
+               },
+               {
+                 "Page Navigation",
+                 {
+                   {"<Shift>k Page_Up", "Previous Page"},
+                   {"<Shift>j Page_Down", "Next Page"},
+                 },
+               },
+               {
+                 "On-Page Navigation",
+                 {
+                   {"j Up", "Move Up"},
+                   {"h Left", "Move Left"},
+                   {"k Down", "Move Down"},
+                   {"l Right", "Move Right"},
+                   {"KP_Add plus", "Zoom In"},
+                   {"KP_Subtract minus", "Zoom Out"},
+                   {"KP_0 0", "Reset View"},
+                 },
+               },
+             }) {
+          Gtk::ShortcutsGroup g{};
+          g.property_title().set_value(gname);
+          sec.add_group(g);
+
+          for (const auto& [k, v] : gkv) {
+            Gtk::ShortcutsShortcut sc{};
+            g.add_shortcut(sc);
+            sc.property_accelerator().set_value(k);
+            sc.property_title().set_value(v);
+          }
+        }
+
+        win->present();
       });
 
-    auto about_action = Gio::SimpleAction::create("item1");
+    auto about_action = Gio::SimpleAction::create("about");
     about_action->set_enabled();
     [[maybe_unused]] auto about_conn =
       about_action->signal_activate().connect([this](const Glib::VariantBase& /*var*/) {
@@ -219,7 +277,7 @@ struct PDFViewer : public Adw::ApplicationWindow {
       });
 
     auto group = Gio::SimpleActionGroup::create();
-    group->add_action(action0);
+    group->add_action(kb_action);
     group->add_action(about_action);
     insert_action_group("win", group);
 
@@ -269,6 +327,71 @@ struct PDFViewer : public Adw::ApplicationWindow {
     [[maybe_unused]] auto evk_conn = evk->signal_key_pressed().connect(
       [&](guint keyval, [[maybe_unused]] guint keycode, [[maybe_unused]] Gdk::ModifierType state) {
         switch (keyval) {
+        // General
+        case GDK_KEY_r: {
+          if (pdf.has_value()) {
+            pdf->reload_doc();
+            draw_area.queue_draw();
+          }
+          return true;
+        }
+        case GDK_KEY_c: {
+          const auto cursor = get_cursor();
+          const auto is_none = cursor != nullptr && cursor->get_name() == "none";
+          set_cursor(is_none ? "default" : "none");
+          return true;
+        }
+        case GDK_KEY_F11: {
+          if (is_fullscreen()) {
+            unfullscreen();
+          } else {
+            fullscreen();
+          }
+          return true;
+        }
+        case GDK_KEY_Escape: {
+          if (is_fullscreen()) {
+            unfullscreen();
+          } else {
+            close();
+          }
+          return true;
+        }
+        case GDK_KEY_q: {
+          close();
+          return true;
+        }
+        // Visual Style
+        case GDK_KEY_i: {
+          invert = !invert;
+          draw_area.queue_draw();
+          return true;
+        }
+        case GDK_KEY_m: {
+          auto style_manager = app.get_style_manager();
+          style_manager->set_color_scheme(style_manager->get_dark() ? Adw::ColorScheme::FORCE_LIGHT
+                                                                    : Adw::ColorScheme::FORCE_DARK);
+          return true;
+        }
+        case GDK_KEY_M: {
+          auto style_manager = app.get_style_manager();
+          style_manager->set_color_scheme(Adw::ColorScheme::DEFAULT);
+          return true;
+        }
+        // Page Navigation
+        case GDK_KEY_J:
+        case GDK_KEY_Page_Down: {
+          navigate_pages(1);
+          trans.reset();
+          return true;
+        }
+        case GDK_KEY_K:
+        case GDK_KEY_Page_Up: {
+          navigate_pages(-1);
+          trans.reset();
+          return true;
+        }
+        // On-Page Navigation
         case GDK_KEY_j:
         case GDK_KEY_Up: {
           trans.off.y -= 1.F;
@@ -293,30 +416,6 @@ struct PDFViewer : public Adw::ApplicationWindow {
           draw_area.queue_draw();
           return true;
         }
-        case GDK_KEY_m: {
-          auto style_manager = app.get_style_manager();
-          style_manager->set_color_scheme(style_manager->get_dark()
-                                            ? Adw::ColorScheme::PREFER_LIGHT
-                                            : Adw::ColorScheme::PREFER_DARK);
-          return true;
-        }
-        case GDK_KEY_M: {
-          auto style_manager = app.get_style_manager();
-          style_manager->set_color_scheme(Adw::ColorScheme::DEFAULT);
-          return true;
-        }
-        case GDK_KEY_J:
-        case GDK_KEY_Page_Down: {
-          navigate_pages(1);
-          trans.reset();
-          return true;
-        }
-        case GDK_KEY_K:
-        case GDK_KEY_Page_Up: {
-          navigate_pages(-1);
-          trans.reset();
-          return true;
-        }
         case GDK_KEY_KP_Add:
         case GDK_KEY_plus: {
           trans.scale *= 1.1F;
@@ -333,44 +432,6 @@ struct PDFViewer : public Adw::ApplicationWindow {
         case GDK_KEY_0: {
           trans.reset();
           draw_area.queue_draw();
-          return true;
-        }
-        case GDK_KEY_Escape: {
-          if (is_fullscreen()) {
-            unfullscreen();
-          } else {
-            close();
-          }
-          return true;
-        }
-        case GDK_KEY_F11: {
-          if (is_fullscreen()) {
-            unfullscreen();
-          } else {
-            fullscreen();
-          }
-          return true;
-        }
-        case GDK_KEY_c: {
-          const auto cursor = get_cursor();
-          const auto is_none = cursor != nullptr && cursor->get_name() == "none";
-          set_cursor(is_none ? "default" : "none");
-          return true;
-        }
-        case GDK_KEY_i: {
-          invert = !invert;
-          draw_area.queue_draw();
-          return true;
-        }
-        case GDK_KEY_r: {
-          if (pdf.has_value()) {
-            pdf->reload_doc();
-            draw_area.queue_draw();
-          }
-          return true;
-        }
-        case GDK_KEY_q: {
-          close();
           return true;
         }
         default: break;
