@@ -9,6 +9,7 @@
 #include "hirgon/fmt.hpp"
 #include "hirgon/mupdf.hpp"
 
+namespace illa {
 template<typename T>
 struct Vec2 {
   T x, y;
@@ -48,14 +49,6 @@ struct Vec2 {
     return {std::max(x, v.x), std::max(y, v.y)};
   }
 };
-template<typename T>
-struct fmt::formatter<Vec2<T>> : nested_formatter<T> {
-  auto format(Vec2<T> v, format_context& ctx) const {
-    return this->write_padded(ctx, [this, v](auto out) {
-      return fmt::format_to(out, "({},{})", this->nested(v.x), this->nested(v.y));
-    });
-  }
-};
 
 template<typename T>
 struct Dims {
@@ -77,14 +70,6 @@ struct Dims {
   template<typename TF>
   explicit operator Dims<TF>() const {
     return {TF(w), TF(h)};
-  }
-};
-template<typename T>
-struct fmt::formatter<Dims<T>> : nested_formatter<T> {
-  auto format(Dims<T> d, format_context& ctx) const {
-    return this->write_padded(ctx, [this, d](auto out) {
-      return fmt::format_to(out, "{}×{}", this->nested(d.w), this->nested(d.h));
-    });
   }
 };
 
@@ -142,9 +127,27 @@ struct Rect {
   }
 };
 Rect(mupdf::FzRect) -> Rect<float>;
+} // namespace illa
+
 template<typename T>
-struct fmt::formatter<Rect<T>> : nested_formatter<T> {
-  auto format(Rect<T> d, format_context& ctx) const {
+struct fmt::formatter<illa::Vec2<T>> : nested_formatter<T> {
+  auto format(illa::Vec2<T> v, format_context& ctx) const {
+    return this->write_padded(ctx, [this, v](auto out) {
+      return fmt::format_to(out, "({},{})", this->nested(v.x), this->nested(v.y));
+    });
+  }
+};
+template<typename T>
+struct fmt::formatter<illa::Dims<T>> : nested_formatter<T> {
+  auto format(illa::Dims<T> d, format_context& ctx) const {
+    return this->write_padded(ctx, [this, d](auto out) {
+      return fmt::format_to(out, "{}×{}", this->nested(d.w), this->nested(d.h));
+    });
+  }
+};
+template<typename T>
+struct fmt::formatter<illa::Rect<T>> : nested_formatter<T> {
+  auto format(illa::Rect<T> d, format_context& ctx) const {
     return this->write_padded(ctx, [this, d](auto out) {
       return fmt::format_to(out, "({},{};{},{})", this->nested(d.x_begin), this->nested(d.x_end),
                             this->nested(d.y_begin), this->nested(d.y_end));
