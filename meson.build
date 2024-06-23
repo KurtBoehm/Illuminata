@@ -1,6 +1,8 @@
 project(
-  'diffusa',
+  'hirgon',
   'cpp',
+  version: '1.0.0',
+  license: 'GPL-3.0-or-later',
   default_options: {
     'cpp_std': 'c++20',
     'warning_level': '3',
@@ -33,9 +35,11 @@ mupdfcpp_deps = cpp.find_library('mupdfcpp')
 
 opengl = get_option('opengl')
 print = get_option('print')
+version = meson.project_version()
 args = [
   f'-DHIRGON_OPENGL=@opengl@',
   f'-DHIRGON_PRINT=@print@',
+  f'-DHIRGON_VERSION="@version@"',
 ]
 
 executable(

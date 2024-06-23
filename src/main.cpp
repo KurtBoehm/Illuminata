@@ -27,48 +27,6 @@
 #include <chrono>
 #endif
 
-struct PdfPageInfo {
-  mupdf::FzPage page;
-  mupdf::FzDisplayList display_list;
-};
-
-struct PdfInfo {
-  std::filesystem::path path;
-  mupdf::FzDocument doc;
-  int page;
-  std::optional<PdfPageInfo> page_info;
-
-  explicit PdfInfo(std::filesystem::path pdf, int pno = 0)
-      : path{std::move(pdf)}, doc{path.c_str()}, page{pno} {
-#if HIRGON_PRINT
-    fmt::print("Open {:?}\n", path);
-#endif
-    update_page(pno);
-  }
-
-  void update_page(int pno) {
-    page = pno;
-    if (valid_page(pno)) {
-#if HIRGON_PRINT
-      fmt::print("load page {}\n", pno);
-#endif
-      mupdf::FzPage p = doc.fz_load_page(pno);
-      page_info = PdfPageInfo(p, p.fz_new_display_list_from_page());
-    } else {
-      page_info.reset();
-    }
-  }
-
-  void reload_doc() {
-    doc = mupdf::FzDocument{path.c_str()};
-    update_page(std::min(page, doc.fz_count_pages() - 1));
-  }
-
-  [[nodiscard]] bool valid_page(int pno) const {
-    return 0 <= pno && pno < doc.fz_count_pages();
-  }
-};
-
 #if HIRGON_OPENGL
 inline constexpr std::array<GLfloat, 12> vertex_data{
   -1.F, +1.F, // vertex 0
@@ -119,7 +77,7 @@ inline constexpr char fragment_shader_code[] =
 #endif
 
 struct PDFViewer : public Adw::ApplicationWindow {
-  std::optional<PdfInfo> pdf{};
+  std::optional<illa::PdfInfo> pdf{};
   bool invert{};
 
   std::conditional_t<HIRGON_OPENGL, Gtk::GLArea, Gtk::DrawingArea> draw_area{};
@@ -373,7 +331,12 @@ struct PDFViewer : public Adw::ApplicationWindow {
         dialog.set_application_icon("org.kurbo96.Hirgon");
         dialog.set_application_name("Hirgon");
         dialog.set_developer_name("Kurt Böhm");
+        dialog.set_version(HIRGON_VERSION);
+        dialog.set_comments("A PDF viewer geared towards presentations.");
+
         dialog.set_developers({"Kurt Böhm <kurbo96@gmail.com>"});
+        dialog.set_artists({"Kurt Böhm <kurbo96@gmail.com>"});
+        dialog.set_designers({"Kurt Böhm <kurbo96@gmail.com>"});
         dialog.present(this);
       });
 
@@ -557,10 +520,22 @@ struct PDFViewer : public Adw::ApplicationWindow {
     auto scroll = Gtk::EventControllerScroll::create();
     scroll->set_flags(Gtk::EventControllerScroll::Flags::VERTICAL);
     [[maybe_unused]] auto scroll_conn = scroll->signal_scroll().connect(
-      [this](double /*dx*/, double dy) {
-        scale_ *= 1.F - 0.1F * float(dy);
-        draw_area.queue_draw();
-        return true;
+      [this, scroll](double /*dx*/, double dy) {
+        auto event = scroll->get_current_event();
+        switch (event->get_modifier_state()) {
+        case Gdk::ModifierType::NO_MODIFIER_MASK: {
+          off_.y += float(dy);
+          draw_area.queue_draw();
+          return true;
+        }
+        case Gdk::ModifierType::CONTROL_MASK: {
+          scale_ *= 1.F - 0.1F * float(dy);
+          draw_area.queue_draw();
+          return true;
+        }
+        default: break;
+        }
+        return false;
       },
       true);
     draw_area.add_controller(scroll);

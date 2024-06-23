@@ -6,6 +6,7 @@
 #include "geometry.hpp"
 #include "mupdf.hpp"
 #include "opengl.hpp"
+#include "pdf.hpp"
 // IWYU pragma: end_exports
 
 #endif // INCLUDE_HIRGON_HIRGON_HPP
