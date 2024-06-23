@@ -1,6 +1,4 @@
 #include <algorithm>
-#include <cmath>
-#include <cstdlib>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -32,9 +30,7 @@ struct PDFViewer : public Adw::ApplicationWindow {
   std::conditional_t<HIRGON_OPENGL, Gtk::GLArea, Gtk::DrawingArea> draw_area{};
   Gtk::Button open_button{"Open PDF"};
 
-  float scale_{1.F};
-  Vec2<float> off_{0.F, 0.F};
-  Vec2<float> drag_off_{0.F, 0.F};
+  illa::Transform trans{};
 
 #if HIRGON_OPENGL
   illa::OpenGlState ogl{};
@@ -101,15 +97,7 @@ struct PDFViewer : public Adw::ApplicationWindow {
       const Rect rect{pinfo->page.fz_bound_page()};
       const float f = doc_factor(Dims<float>(dims), rect);
       const auto mat = mupdf::FzMatrix{}.fz_pre_scale(f, f);
-
-      // In document coordinates
-      const auto area_dims = dims / f;
-      const auto area_center = area_dims.center();
-      const auto center = rect.center() + off_ - drag_off_ * scale_factor / f;
-      const auto view_area = Rect{area_dims} - area_center + center;
-      const auto inter = view_area.intersect(rect);
-      const auto view_area_min = inter - center + area_center;
-      const auto off = view_area_min.offset() * f;
+      const auto [inter, off] = trans.document_transform(dims, rect, scale_factor, f);
 
       auto rclip = inter.fz_rect();
       auto irect = rclip.fz_transform_rect(mat).fz_round_rect();
@@ -275,25 +263,25 @@ struct PDFViewer : public Adw::ApplicationWindow {
         switch (keyval) {
         case GDK_KEY_j:
         case GDK_KEY_Up: {
-          off_.y -= 1.F;
+          trans.off.y -= 1.F;
           draw_area.queue_draw();
           return true;
         }
         case GDK_KEY_h:
         case GDK_KEY_Left: {
-          off_.x -= 1.F;
+          trans.off.x -= 1.F;
           draw_area.queue_draw();
           return true;
         }
         case GDK_KEY_k:
         case GDK_KEY_Down: {
-          off_.y += 1.F;
+          trans.off.y += 1.F;
           draw_area.queue_draw();
           return true;
         }
         case GDK_KEY_l:
         case GDK_KEY_Right: {
-          off_.x += 1.F;
+          trans.off.x += 1.F;
           draw_area.queue_draw();
           return true;
         }
@@ -312,30 +300,30 @@ struct PDFViewer : public Adw::ApplicationWindow {
         case GDK_KEY_J:
         case GDK_KEY_Page_Down: {
           navigate_pages(1);
-          reset_transform();
+          trans.reset();
           return true;
         }
         case GDK_KEY_K:
         case GDK_KEY_Page_Up: {
           navigate_pages(-1);
-          reset_transform();
+          trans.reset();
           return true;
         }
         case GDK_KEY_KP_Add:
         case GDK_KEY_plus: {
-          scale_ *= 1.1F;
+          trans.scale *= 1.1F;
           draw_area.queue_draw();
           return true;
         }
         case GDK_KEY_KP_Subtract:
         case GDK_KEY_minus: {
-          scale_ *= 0.9F;
+          trans.scale *= 0.9F;
           draw_area.queue_draw();
           return true;
         }
         case GDK_KEY_KP_0:
         case GDK_KEY_0: {
-          reset_transform();
+          trans.reset();
           draw_area.queue_draw();
           return true;
         }
@@ -388,13 +376,13 @@ struct PDFViewer : public Adw::ApplicationWindow {
     drag->set_button(GDK_BUTTON_MIDDLE);
     [[maybe_unused]] auto drag_update_conn =
       drag->signal_drag_update().connect([this](double start_x, double start_y) {
-        drag_off_ = Vec2{float(start_x), float(start_y)};
+        trans.drag_off = Vec2{float(start_x), float(start_y)};
         draw_area.queue_draw();
       });
     [[maybe_unused]] auto drag_end_conn =
       drag->signal_drag_end().connect([this](double start_x, double start_y) {
-        off_ = off_ - Vec2{float(start_x), float(start_y)} / doc_factor();
-        drag_off_ = {0.F};
+        trans.off -= Vec2{float(start_x), float(start_y)} / doc_factor();
+        trans.drag_off = {0.F};
         draw_area.queue_draw();
       });
     draw_area.add_controller(drag);
@@ -406,12 +394,12 @@ struct PDFViewer : public Adw::ApplicationWindow {
         auto event = scroll->get_current_event();
         switch (event->get_modifier_state()) {
         case Gdk::ModifierType::NO_MODIFIER_MASK: {
-          off_.y += float(dy);
+          trans.off.y += float(dy);
           draw_area.queue_draw();
           return true;
         }
         case Gdk::ModifierType::CONTROL_MASK: {
-          scale_ *= 1.F - 0.1F * float(dy);
+          trans.scale *= 1.F - 0.1F * float(dy);
           draw_area.queue_draw();
           return true;
         }
@@ -424,7 +412,7 @@ struct PDFViewer : public Adw::ApplicationWindow {
   }
 
   float doc_factor(Dims<float> dims, Rect<float> rect) const {
-    return std::min(dims.w / rect.w(), dims.h / rect.h()) * scale_;
+    return std::min(dims.w / rect.w(), dims.h / rect.h()) * trans.scale;
   }
   float doc_factor() const {
     if (!pdf.has_value() || !pdf->page_info.has_value()) {
@@ -437,12 +425,6 @@ struct PDFViewer : public Adw::ApplicationWindow {
     const Rect rect{pinfo->page.fz_bound_page()};
 
     return doc_factor(Dims<float>(dims), rect);
-  }
-
-  void reset_transform() {
-    scale_ = 1.F;
-    off_ = {0.F, 0.F};
-    drag_off_ = {0.F, 0.F};
   }
 
   void load_pdf(std::filesystem::path p) {

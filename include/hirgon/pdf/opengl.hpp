@@ -62,9 +62,9 @@ struct OpenGlState {
   std::optional<gl::Program> prog{};
   std::optional<gl::VertexArray> vtxs{};
   std::optional<gl::Texture> tex{};
-  GLint invert_uniform_{};
-  GLint area_uniform_{};
-  GLint tex_uniform_{};
+  GLint invert_uniform{};
+  GLint area_uniform{};
+  GLint tex_uniform{};
 
   void realize() {
     gl::VertexArray& vao = vtxs.emplace();
@@ -86,9 +86,9 @@ struct OpenGlState {
     program.attach(vertex);
     program.attach(fragment);
     program.link();
-    invert_uniform_ = program.uniform_location("invert");
-    area_uniform_ = program.uniform_location("area");
-    tex_uniform_ = program.uniform_location("tex");
+    invert_uniform = program.uniform_location("invert");
+    area_uniform = program.uniform_location("area");
+    tex_uniform = program.uniform_location("tex");
     program.detach(vertex);
     program.detach(fragment);
 
@@ -118,18 +118,18 @@ struct OpenGlState {
         fmt::print("load: {}×{}×{}\n", pix.w(), pix.h(), pix.s());
 #endif
         tx.load(pix.samples(), pix.w(), pix.h(), gl::PixelFormat::RGB);
-        tu.set_uniform(tex_uniform_);
+        tu.set_uniform(tex_uniform);
       }
 
       {
-        glUniform1i(invert_uniform_, static_cast<GLint>(invert));
+        glUniform1i(invert_uniform, static_cast<GLint>(invert));
         std::array<GLint, 4> arr{
           GLint(std::round(off.x)),
           dims.h - GLint(std::round(off.y)),
           pix.w(),
           pix.h(),
         };
-        glUniform1iv(area_uniform_, arr.size(), arr.data());
+        glUniform1iv(area_uniform, arr.size(), arr.data());
       }
 
       glEnableVertexAttribArray(0);

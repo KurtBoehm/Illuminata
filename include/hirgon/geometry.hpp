@@ -16,6 +16,17 @@ struct Vec2 {
   Vec2(T v) : x{v}, y{v} {} // NOLINT(hicpp-explicit-conversions)
   Vec2(T x, T y) : x{x}, y{y} {}
 
+  Vec2& operator+=(Vec2 other) {
+    x += other.x;
+    y += other.y;
+    return *this;
+  }
+  Vec2& operator-=(Vec2 other) {
+    x -= other.x;
+    y -= other.y;
+    return *this;
+  }
+
   template<typename TF>
   friend Vec2<std::common_type_t<T, TF>> operator*(Vec2 v, TF f) {
     return {v.x * f, v.y * f};
