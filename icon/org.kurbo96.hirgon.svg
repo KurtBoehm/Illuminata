@@ -11,10 +11,6 @@
     <stop offset="100%" stop-color="#444" />
   </linearGradient>
 
-  <radialGradient id="gradRing">
-    <stop offset="0%" stop-color="#ccc" />
-    <stop offset="100%" stop-color="#444" />
-  </radialGradient>
   <radialGradient id="gradOverheadBg" cx="64" cy="64" gradientUnits="userSpaceOnUse" r="96">
     <stop offset="0" stop-color="#fff" />
     <stop offset="1" stop-color="#ffe199" />
@@ -30,30 +26,30 @@
   </linearGradient>
   <linearGradient xlink:href="#gradPhotoB" x1="30" x2="30" y1="0" y2="58.5" id="gradPhoto1" />
   <linearGradient xlink:href="#gradPhotoB" x1="16" x2="16" y1="0" y2="28.9" id="gradPhoto2" />
-  <linearGradient xlink:href="#gradPhotoB" x1="0" x2="0" y1="50.25" y2="65.25" id="gradPhoto3" />
+  <linearGradient xlink:href="#gradPhotoB" x1="0" x2="0" y1="54.25" y2="69.25" id="gradPhoto3" />
   <clipPath id="photoClip">
-    <rect x="28" y="40" width="72" height="56" rx="6" />
+    <rect x="32" y="48" width="64" height="40" rx="4" />
   </clipPath>
 
   <!--Ring-->
-  <circle cx="64" cy="116" r="4" stroke-width="2" fill="none" stroke="url(#gradRing)" />
+  <circle cx="64" cy="121" r="4" stroke-width="2" fill="none" stroke="#555" />
   <!--Projector Screen-->
-  <rect x="12" y="30" width="104" height="84" fill="url(#gradBg)" />
+  <rect x="12" y="32" width="104" height="82" fill="url(#gradBg)" />
   <!--Screen Bars-->
-  <rect x="8" y="28" width="112" height="4" rx="2" fill="url(#gradBar)" />
+  <rect x="8" y="28" width="112" height="8" rx="4" fill="url(#gradBar)" />
   <rect x="8" y="112" width="112" height="4" rx="2" fill="url(#gradBar)" />
   <!--Overhead Background-->
-  <rect x="16" y="36" width="96" height="72" rx="4" ry="4" fill="url(#gradOverheadBg)" />
+  <rect x="16" y="40" width="96" height="68" rx="4" ry="4" fill="url(#gradOverheadBg)" />
   <!--Pseudo-Text-->
   <g stroke="#000" stroke-opacity="0.7" stroke-width="4" stroke-linecap="round">
-    <line x1="36" x2="52" y1="102" y2="102" />
-    <line x1="60" x2="92" y1="102" y2="102" />
+    <line x1="36" x2="52" y1="98" y2="98" />
+    <line x1="60" x2="92" y1="98" y2="98" />
   </g>
   <!--Pseudo-Photo-->
   <g opacity="0.9">
-    <rect x="28" y="40" width="72" height="56" rx="6" fill="url(#gradPhotoBg)" />
-    <circle cx="80" cy="56" r="8" fill="url(#gradPhoto3)" fill-opacity="0.75" />
+    <rect x="32" y="48" width="64" height="40" rx="4" fill="url(#gradPhotoBg)" />
     <g clip-path="url(#photoClip)">
+      <circle cx="80" cy="60" r="8" fill="url(#gradPhoto3)" fill-opacity="0.75" />
       <rect width="60" height="60" rx="8" transform="translate(44 64) rotate(45)" fill="url(#gradPhoto1)"
         fill-opacity="0.568" />
       <rect width="60" height="60" rx="8" transform="translate(68 72) rotate(45)" fill="url(#gradPhoto2)"
