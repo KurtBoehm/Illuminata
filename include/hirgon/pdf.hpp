@@ -3,6 +3,7 @@
 
 // IWYU pragma: begin_exports
 #include "pdf/info.hpp"
+#include "pdf/opengl.hpp"
 // IWYU pragma: end_exports
 
 #endif // INCLUDE_HIRGON_PDF_HPP

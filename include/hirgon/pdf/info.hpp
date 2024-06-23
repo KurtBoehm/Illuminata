@@ -2,8 +2,6 @@
 #define INCLUDE_HIRGON_PDF_INFO_HPP
 
 #include <algorithm>
-#include <cmath>
-#include <cstdlib>
 #include <filesystem>
 #include <optional>
 #include <utility>
