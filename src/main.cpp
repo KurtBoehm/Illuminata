@@ -7,6 +7,7 @@
 #include <type_traits>
 #include <utility>
 
+#include <gdk/gdk.h>
 #include <gdk/gdkkeysyms.h>
 #include <gdkmm.h>
 #include <giomm.h>
@@ -350,7 +351,7 @@ struct PDFViewer : public Adw::ApplicationWindow {
     auto item0 = Gio::MenuItem::create("a", Glib::ustring{});
     item0->set_action("win.item0");
     menu->append_item(item0);
-    menu->append("B");
+    menu->append("About", "win.item1");
     popover.set_menu_model(menu);
 
     auto action0 = Gio::SimpleAction::create_bool("item0", true);
@@ -361,18 +362,33 @@ struct PDFViewer : public Adw::ApplicationWindow {
         action0->get_state(state);
         action0->change_state(!state);
       });
+
+    auto about_action = Gio::SimpleAction::create("item1");
+    about_action->set_enabled();
+    [[maybe_unused]] auto about_conn = about_action->signal_activate().connect(
+      [this, about_action](const Glib::VariantBase& /*var*/) {
+        fmt::print("dialog\n");
+        Adw::AboutDialog dialog{};
+        dialog.set_application_icon("org.gnome.Evince");
+        dialog.set_application_name("Hirgon");
+        dialog.set_developer_name("Kurt Böhm");
+        dialog.set_developers({"Kurt Böhm <kurbo96@gmail.com>"});
+        dialog.present(this);
+      });
+
     auto group = Gio::SimpleActionGroup::create();
     group->add_action(action0);
-    this->insert_action_group("win", group);
+    group->add_action(about_action);
+    insert_action_group("win", group);
 
     Gtk::MenuButton menu_button{};
     menu_button.set_icon_name("open-menu-symbolic");
+    menu_button.set_focusable(false);
+    menu_button.set_can_focus(false);
     menu_button.set_menu_model(menu);
     bar.pack_end(menu_button);
 
-    Gtk::Image open_icon{};
-    open_icon.set_from_icon_name("document-open");
-    open_button.set_child(open_icon);
+    open_button.set_image_from_icon_name("document-open");
     open_button.set_focusable(false);
     [[maybe_unused]] auto open_conn = open_button.signal_clicked().connect([&]() {
       auto filter_pdf = Gtk::FileFilter::create();
@@ -411,41 +427,49 @@ struct PDFViewer : public Adw::ApplicationWindow {
     [[maybe_unused]] auto evk_conn = evk->signal_key_pressed().connect(
       [&](guint keyval, [[maybe_unused]] guint keycode, [[maybe_unused]] Gdk::ModifierType state) {
         switch (keyval) {
-        case GDK_KEY_w: {
+        case GDK_KEY_j:
+        case GDK_KEY_Up: {
           off_.y -= 1.F;
           draw_area.queue_draw();
           return true;
         }
-        case GDK_KEY_a: {
+        case GDK_KEY_h:
+        case GDK_KEY_Left: {
           off_.x -= 1.F;
           draw_area.queue_draw();
           return true;
         }
-        case GDK_KEY_s: {
+        case GDK_KEY_k:
+        case GDK_KEY_Down: {
           off_.y += 1.F;
           draw_area.queue_draw();
           return true;
         }
-        case GDK_KEY_d: {
+        case GDK_KEY_l:
+        case GDK_KEY_Right: {
           off_.x += 1.F;
           draw_area.queue_draw();
           return true;
         }
         case GDK_KEY_m: {
           auto style_manager = app.get_style_manager();
-          style_manager->set_color_scheme(style_manager->get_dark() ? Adw::ColorScheme::FORCE_LIGHT
-                                                                    : Adw::ColorScheme::FORCE_DARK);
+          style_manager->set_color_scheme(style_manager->get_dark()
+                                            ? Adw::ColorScheme::PREFER_LIGHT
+                                            : Adw::ColorScheme::PREFER_DARK);
           return true;
         }
-        case GDK_KEY_Right:
-        case GDK_KEY_Down:
+        case GDK_KEY_M: {
+          auto style_manager = app.get_style_manager();
+          style_manager->set_color_scheme(Adw::ColorScheme::DEFAULT);
+          return true;
+        }
+        case GDK_KEY_J:
         case GDK_KEY_Page_Down: {
           navigate_pages(1);
           reset_transform();
           return true;
         }
-        case GDK_KEY_Left:
-        case GDK_KEY_Up:
+        case GDK_KEY_K:
         case GDK_KEY_Page_Up: {
           navigate_pages(-1);
           reset_transform();
@@ -515,6 +539,7 @@ struct PDFViewer : public Adw::ApplicationWindow {
     add_controller(evk);
 
     auto drag = Gtk::GestureDrag::create();
+    drag->set_button(GDK_BUTTON_MIDDLE);
     [[maybe_unused]] auto drag_update_conn =
       drag->signal_drag_update().connect([this](double start_x, double start_y) {
         drag_off_ = Vec2{float(start_x), float(start_y)};
@@ -586,5 +611,21 @@ int main(int argc, char* argv[]) {
   auto app = Adw::Application::create("org.kurbo96.hirgon", Gio::Application::Flags::DEFAULT_FLAGS);
 
   auto path = (argc > 1) ? std::make_optional<std::filesystem::path>(argv[1]) : std::nullopt;
-  return app->make_window_and_run<PDFViewer>(0, nullptr, *app, path);
+
+  app->signal_activate().connect([&]() {
+    // The created window is managed. Thus, the C++ wrapper is deleted
+    // by Gtk::Object::destroy_notify_() when the C window is destroyed.
+    // https://gitlab.gnome.org/GNOME/gtkmm/-/issues/114
+    auto* window = make_managed<PDFViewer>(*app, path);
+    app->add_window(*window);
+    window->present();
+  });
+
+  app->signal_window_removed().connect([&](Gtk::Window* window) {
+    if (window != nullptr) {
+      window->destroy();
+    }
+  });
+
+  return app->run(0, nullptr);
 }
