@@ -1,86 +1,63 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg height="128px" viewBox="0 0 128 128" width="128px" xmlns="http://www.w3.org/2000/svg"
+<svg height="128" viewBox="0 0 128 128" width="128" xmlns="http://www.w3.org/2000/svg"
   xmlns:xlink="http://www.w3.org/1999/xlink">
-  <linearGradient id="e" gradientUnits="userSpaceOnUse" x1="12" x2="116" y1="98" y2="98">
-    <stop offset="0" stop-color="#b9b7b5" />
-    <stop offset="0.0357143" stop-color="#e4e1de" />
-    <stop offset="0.0713653" stop-color="#d5d3cf" />
-    <stop offset="0.928571" stop-color="#d5d3cf" />
-    <stop offset="0.964286" stop-color="#e4e1de" />
-    <stop offset="1" stop-color="#b9b7b5" />
+  <linearGradient id="gradBar" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="#ccc" />
+    <stop offset="33%" stop-color="#eee" />
+    <stop offset="100%" stop-color="#999" />
   </linearGradient>
-  <linearGradient id="gradBody2" gradientUnits="userSpaceOnUse" x1="48" x2="80" y1="98" y2="98">
-    <stop offset="0" stop-color="#b9b7b5" />
-    <stop offset="0.0357143" stop-color="#e4e1de" />
-    <stop offset="0.0713653" stop-color="#d5d3cf" />
-    <stop offset="0.928571" stop-color="#d5d3cf" />
-    <stop offset="0.964286" stop-color="#e4e1de" />
-    <stop offset="1" stop-color="#b9b7b5" />
+  <linearGradient id="gradBg" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="#555" />
+    <stop offset="100%" stop-color="#444" />
   </linearGradient>
-  <linearGradient id="gradArm1" gradientUnits="userSpaceOnUse" x1="116" x2="122" y1="98" y2="98">
-    <stop offset="0" stop-color="#3d3846" />
-    <stop offset="0.2" stop-color="#77767b" />
-    <stop offset="0.4" stop-color="#5e5c64" />
-    <stop offset="0.6" stop-color="#5e5c64" />
-    <stop offset="0.8" stop-color="#77767b" />
-    <stop offset="1" stop-color="#3d3846" />
-  </linearGradient>
-  <linearGradient id="gradBody3" gradientUnits="userSpaceOnUse" x1="80" x2="80" y1="24" y2="0">
-    <stop offset="0" stop-color="#e8e5e3" />
-    <stop offset="1" stop-color="#fdfcfc" />
-  </linearGradient>
-  <radialGradient id="f" cx="64" cy="51" gradientUnits="userSpaceOnUse" r="96">
-    <stop offset="0" stop-color="#ffffff" />
-    <stop offset="1" stop-color="#ffc433" />
+
+  <radialGradient id="gradRing">
+    <stop offset="0%" stop-color="#ccc" />
+    <stop offset="100%" stop-color="#444" />
   </radialGradient>
-  <linearGradient id="gradPhotoBg" x1="81.870699" x2="26.81549825" y1="66.53946998" y2="24.72764958"
-    gradientUnits="userSpaceOnUse">
+  <radialGradient id="gradOverheadBg" cx="64" cy="64" gradientUnits="userSpaceOnUse" r="96">
+    <stop offset="0" stop-color="#fff" />
+    <stop offset="1" stop-color="#ffe199" />
+  </radialGradient>
+  <linearGradient id="gradPhotoBg" x1="90" x2="32" y1="90" y2="42" gradientUnits="userSpaceOnUse">
     <stop offset="0" stop-color="#ffa348" />
-    <stop offset="0.474835" stop-color="#c061cb" />
+    <stop offset="0.5" stop-color="#c061cb" />
     <stop offset="1" stop-color="#1c71d8" />
   </linearGradient>
   <linearGradient id="gradPhotoB" gradientUnits="userSpaceOnUse">
-    <stop offset="0" stop-color="#ffffff" />
-    <stop offset="1" stop-color="#ffffff" stop-opacity="0" />
+    <stop offset="0" stop-color="#fff" />
+    <stop offset="1" stop-color="#fff" stop-opacity="0" />
   </linearGradient>
-  <linearGradient xlink:href="#gradPhotoB" x1="73.577" x2="18.423" y1="90.526" y2="145.680" id="gradPhoto1" />
-  <linearGradient xlink:href="#gradPhotoB" x1="90.21" x2="62.94" y1="87.21" y2="114.48" id="gradPhoto2" />
-  <linearGradient xlink:href="#gradPhotoB" x1="0" x2="0" y1="47" y2="67" id="gradPhoto3" />
+  <linearGradient xlink:href="#gradPhotoB" x1="30" x2="30" y1="0" y2="58.5" id="gradPhoto1" />
+  <linearGradient xlink:href="#gradPhotoB" x1="16" x2="16" y1="0" y2="28.9" id="gradPhoto2" />
+  <linearGradient xlink:href="#gradPhotoB" x1="0" x2="0" y1="50.25" y2="65.25" id="gradPhoto3" />
   <clipPath id="photoClip">
-    <rect x="28" y="36" width="88" height="68" rx="8" />
+    <rect x="28" y="40" width="72" height="56" rx="6" />
   </clipPath>
 
-
-  <rect x="12" y="26" width="104" height="86" rx="14" fill="url(#e)" />
-  <rect x="12" y="12" width="104" height="78" rx="14" fill="#f6f5f4" />
-  <rect x="16" y="16" width="96" height="70" rx="10" fill="#241f31" />
-  <rect x="20" y="20" width="88" height="62" rx="6" fill="url(#f)" />
-  <rect x="24" y="24" width="80" height="54" rx="2" fill="#ffffff" fill-opacity="0.5" />
-  <g opacity="0.5" transform="translate(0,4)">
-    <line x1="36" x2="52" y1="66" y2="66" stroke="black" stroke-width="4" stroke-linecap="round" />
-    <line x1="60" x2="92" y1="66" y2="66" stroke="black" stroke-width="4" stroke-linecap="round" />
+  <!--Ring-->
+  <circle cx="64" cy="116" r="4" stroke-width="2" fill="none" stroke="url(#gradRing)" />
+  <!--Projector Screen-->
+  <rect x="12" y="30" width="104" height="84" fill="url(#gradBg)" />
+  <!--Screen Bars-->
+  <rect x="8" y="28" width="112" height="4" rx="2" fill="url(#gradBar)" />
+  <rect x="8" y="112" width="112" height="4" rx="2" fill="url(#gradBar)" />
+  <!--Overhead Background-->
+  <rect x="16" y="36" width="96" height="72" rx="4" ry="4" fill="url(#gradOverheadBg)" />
+  <!--Pseudo-Text-->
+  <g stroke="#000" stroke-opacity="0.7" stroke-width="4" stroke-linecap="round">
+    <line x1="36" x2="52" y1="102" y2="102" />
+    <line x1="60" x2="92" y1="102" y2="102" />
   </g>
-  <g opacity="0.75" transform="matrix(0.5 0 0 0.5 32 20)">
-    <rect x="20" y="20" width="88" height="68" rx="8" fill="url(#gradPhotoBg)" />
-    <g fill-opacity="0.568457" clip-path="url(#photoClip)" transform="translate(-8 -16)">
-      <path
-        d="m 40.34375 68.605469 l -43.839844 43.839843 c -3.125 3.125 -3.125 8.191407 0 11.3125 l 43.839844 43.84375 c 3.125 3.121094 8.1875 3.121094 11.3125 0 l 43.839844 -43.84375 c 3.125 -3.121093 3.125 -8.1875 0 -11.3125 l -43.839844 -43.839843 c -3.125 -3.125 -8.1875 -3.125 -11.3125 0 z m 0 0"
-        fill="url(#gradPhoto1)" />
-    </g>
-    <g fill-opacity="0.363132" clip-path="url(#photoClip)" transform="translate(-8 -16)">
-      <path
-        d="m 69.34375 77.65625 l -43.839844 43.839844 c -3.125 3.125 -3.125 8.191406 0 11.316406 l 43.839844 43.839844 c 3.125 3.125 8.1875 3.125 11.3125 0 l 43.839844 -43.839844 c 3.125 -3.125 3.125 -8.191406 0 -11.316406 l -43.839844 -43.839844 c -3.125 -3.125 -8.1875 -3.125 -11.3125 0 z m 0 0"
-        fill="url(#gradPhoto2)" />
-    </g>
-    <g fill-opacity="0.768678" clip-path="url(#photoClip)" transform="translate(-8 -16)">
-      <path
-        d="m 93 67 c -5.523438 0 -10 -4.476562 -10 -10 s 4.476562 -10 10 -10 s 10 4.476562 10 10 s -4.476562 10 -10 10 z m 0 0"
-        fill="url(#gradPhoto3)" />
+  <!--Pseudo-Photo-->
+  <g opacity="0.9">
+    <rect x="28" y="40" width="72" height="56" rx="6" fill="url(#gradPhotoBg)" />
+    <circle cx="80" cy="56" r="8" fill="url(#gradPhoto3)" fill-opacity="0.75" />
+    <g clip-path="url(#photoClip)">
+      <rect width="60" height="60" rx="8" transform="translate(44 64) rotate(45)" fill="url(#gradPhoto1)"
+        fill-opacity="0.568" />
+      <rect width="60" height="60" rx="8" transform="translate(68 72) rotate(45)" fill="url(#gradPhoto2)"
+        fill-opacity="0.363" />
     </g>
   </g>
-  <line x1="64" x2="119" y1="16" y2="16" stroke="#68666f" stroke-width="6"  />
-  <line x1="119" x2="119" y1="8" y2="60" stroke="url(#gradArm1)" stroke-width="6" stroke-linecap="round" />
-  <circle cx="119" cy="8" r="3" fill="#3d3846" />
-  <rect x="48" y="10" width="32" height="24" rx="4" fill="url(#gradBody2)" />
-  <rect x="48" y="0" width="32" height="26" rx="4" fill="url(#gradBody3)" />
 </svg>
