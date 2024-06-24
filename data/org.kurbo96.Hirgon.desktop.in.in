@@ -1,11 +1,11 @@
 [Desktop Entry]
 Name=Hirgon
 Comment=PDF Viewer
-Exec=hirgon
+Exec=hirgon %f
 Icon=@icon@
 Terminal=false
 Type=Application
 Categories=Utility;GTK;GNOME;
-MimeType=application/pdf;
+MimeType=application/pdf;application/x-ext-pdf;
 StartupWMClass=org.kurbo96.hirgon
 SingleMainWindow=false
