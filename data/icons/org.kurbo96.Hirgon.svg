@@ -42,7 +42,8 @@
   <circle cx="64" cy="121" r="4" fill="none" stroke="#555" stroke-width="2" />
   <rect width="112" height="4" x="8" y="112" fill="#f6f5f4" rx="2" ry="2" />
   <rect width="96" height="68" x="16" y="40" fill="url(#c)" rx="4" ry="4" />
-  <path stroke="#000" stroke-linecap="round" stroke-opacity=".7" stroke-width="4" d="M36 98h16m8 0h32" />
+  <path stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-opacity=".7" stroke-width="2" fill="none"
+    d="M33 96v4m4-4v4h3m3-4v4h3m3-4v2a2 2 0 0 0 4 0v-2m4 4v-4l2 2 2-2v4m4-4v4m4 0v-4l4 4v-4m4 4v-2a2 2 0 0 1 4 0v2m-4-1.25h4m5 1.25v-4m-2 0h4m3 4v-2a2 2 0 0 1 4 0v2m-4-1.25h4" />
   <g clip-path="url(#d)" opacity=".9">
     <path fill="url(#e)" d="M32 48h64v40H32z" />
     <circle cx="80" cy="60" r="8" fill="url(#f)" />
