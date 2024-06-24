@@ -20,7 +20,7 @@ inline constexpr std::array<GLfloat, 12> vertex_data{
   +1.F, -1.F, // vertex 5
 };
 
-inline constexpr char vertex_shader_code[] = "#version 320\n"
+inline constexpr char vertex_shader_code[] = "#version 320 es\n"
                                              "\n"
                                              "layout(location = 0) in vec2 position;\n"
                                              "\n"
@@ -29,7 +29,7 @@ inline constexpr char vertex_shader_code[] = "#version 320\n"
                                              "}";
 
 inline constexpr char fragment_shader_code[] =
-  "#version 320\n"
+  "#version 320 es\n"
   "precision mediump float;\n"
   "\n"
   "out vec4 outColor;\n"

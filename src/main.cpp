@@ -2,8 +2,6 @@
 #include <optional>
 
 #include <giomm.h>
-#include <glibmm.h>
-#include <gtkmm.h>
 #include <libadwaitamm.h>
 
 #include "hirgon/hirgon.hpp"
