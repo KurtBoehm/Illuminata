@@ -1,7 +1,7 @@
-#ifndef INCLUDE_HIRGON_PDF_TRANSFORM_HPP
-#define INCLUDE_HIRGON_PDF_TRANSFORM_HPP
+#ifndef INCLUDE_ILLUMINATA_PDF_TRANSFORM_HPP
+#define INCLUDE_ILLUMINATA_PDF_TRANSFORM_HPP
 
-#include "hirgon/geometry.hpp"
+#include "illuminata/geometry.hpp"
 
 namespace illa {
 struct Transform {
@@ -34,4 +34,4 @@ struct Transform {
 };
 } // namespace illa
 
-#endif // INCLUDE_HIRGON_PDF_TRANSFORM_HPP
+#endif // INCLUDE_ILLUMINATA_PDF_TRANSFORM_HPP

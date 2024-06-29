@@ -1,13 +1,13 @@
-#ifndef INCLUDE_HIRGON_GEOMETRY_HPP
-#define INCLUDE_HIRGON_GEOMETRY_HPP
+#ifndef INCLUDE_ILLUMINATA_GEOMETRY_HPP
+#define INCLUDE_ILLUMINATA_GEOMETRY_HPP
 
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <type_traits>
 
-#include "hirgon/fmt.hpp"
-#include "hirgon/mupdf.hpp"
+#include "illuminata/fmt.hpp"
+#include "illuminata/mupdf.hpp"
 
 namespace illa {
 template<typename T>
@@ -155,4 +155,4 @@ struct fmt::formatter<illa::Rect<T>> : nested_formatter<T> {
   }
 };
 
-#endif // INCLUDE_HIRGON_GEOMETRY_HPP
+#endif // INCLUDE_ILLUMINATA_GEOMETRY_HPP

@@ -1,11 +1,11 @@
 [Desktop Entry]
-Name=Hirgon
+Name=Illuminata
 Comment=PDF Viewer
-Exec=hirgon %f
+Exec=illuminata %f
 Icon=@icon@
 Terminal=false
 Type=Application
 Categories=Utility;GTK;GNOME;
 MimeType=application/pdf;application/x-ext-pdf;
-StartupWMClass=org.kurbo96.hirgon
+StartupWMClass=org.kurbo96.illuminata
 SingleMainWindow=false

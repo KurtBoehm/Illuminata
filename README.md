@@ -1,3 +1,3 @@
-# <img src="./data/icons/org.kurbo96.Hirgon.svg" style="height: 1em;"/> Hirgon
+# <img src="./data/icons/org.kurbo96.Illuminata.svg" style="height: 1em;"/> Illuminata
 
 A PDF viewer geared towards presentations.

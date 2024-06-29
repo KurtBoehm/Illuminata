@@ -1,5 +1,5 @@
-#ifndef INCLUDE_HIRGON_FMT_HPP
-#define INCLUDE_HIRGON_FMT_HPP
+#ifndef INCLUDE_ILLUMINATA_FMT_HPP
+#define INCLUDE_ILLUMINATA_FMT_HPP
 
 // IWYU pragma: begin_exports
 #include <fmt/chrono.h>
@@ -8,4 +8,4 @@
 #include <fmt/std.h>
 // IWYU pragma: end_exports
 
-#endif // INCLUDE_HIRGON_FMT_HPP
+#endif // INCLUDE_ILLUMINATA_FMT_HPP

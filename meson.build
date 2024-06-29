@@ -1,5 +1,5 @@
 project(
-  'hirgon',
+  'illuminata',
   'cpp',
   version: '1.0.0',
   license: 'GPL-3.0-or-later',
@@ -15,7 +15,7 @@ i18n = import('i18n')
 gnome = import('gnome')
 desktop_file_validate = find_program('desktop-file-validate', required: false)
 
-application_id = 'org.kurbo96.Hirgon'
+application_id = 'org.kurbo96.Illuminata'
 prefix = get_option('prefix')
 datadir = prefix / get_option('datadir')
 iconsdir = datadir / 'icons'
@@ -37,13 +37,13 @@ opengl = get_option('opengl')
 print = get_option('print')
 version = meson.project_version()
 args = [
-  f'-DHIRGON_OPENGL=@opengl@',
-  f'-DHIRGON_PRINT=@print@',
-  f'-DHIRGON_VERSION="@version@"',
+  f'-DILLUMINATA_OPENGL=@opengl@',
+  f'-DILLUMINATA_PRINT=@print@',
+  f'-DILLUMINATA_VERSION="@version@"',
 ]
 
 executable(
-  'hirgon',
+  'illuminata',
   'src/main.cpp',
   install: true,
   include_directories: ['include'],

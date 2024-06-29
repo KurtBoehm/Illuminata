@@ -1,5 +1,5 @@
-#ifndef INCLUDE_HIRGON_OPENGL_HPP
-#define INCLUDE_HIRGON_OPENGL_HPP
+#ifndef INCLUDE_ILLUMINATA_OPENGL_HPP
+#define INCLUDE_ILLUMINATA_OPENGL_HPP
 
 #include <cassert>
 #include <cstddef>
@@ -353,4 +353,4 @@ private:
 };
 } // namespace gl
 
-#endif // INCLUDE_HIRGON_OPENGL_HPP
+#endif // INCLUDE_ILLUMINATA_OPENGL_HPP

@@ -1,14 +1,14 @@
-#ifndef INCLUDE_HIRGON_PDF_OPENGL_HPP
-#define INCLUDE_HIRGON_PDF_OPENGL_HPP
+#ifndef INCLUDE_ILLUMINATA_PDF_OPENGL_HPP
+#define INCLUDE_ILLUMINATA_PDF_OPENGL_HPP
 
 #include <array>
 #include <cmath>
 #include <optional>
 
-#include "hirgon/fmt.hpp"
-#include "hirgon/geometry.hpp"
-#include "hirgon/mupdf.hpp"
-#include "hirgon/opengl.hpp"
+#include "illuminata/fmt.hpp"
+#include "illuminata/geometry.hpp"
+#include "illuminata/mupdf.hpp"
+#include "illuminata/opengl.hpp"
 
 namespace illa {
 inline constexpr std::array<GLfloat, 12> vertex_data{
@@ -114,7 +114,7 @@ struct OpenGlState {
         gl::TextureUnit tu{0};
         auto& tx = *tex;
         tu.bind(tx);
-#if HIRGON_PRINT
+#if ILLUMINATA_PRINT
         fmt::print("load: {}×{}×{}\n", pix.w(), pix.h(), pix.s());
 #endif
         tx.load(pix.samples(), pix.w(), pix.h(), gl::PixelFormat::RGB);
@@ -143,4 +143,4 @@ struct OpenGlState {
 };
 } // namespace illa
 
-#endif // INCLUDE_HIRGON_PDF_OPENGL_HPP
+#endif // INCLUDE_ILLUMINATA_PDF_OPENGL_HPP

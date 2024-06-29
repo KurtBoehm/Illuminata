@@ -1,5 +1,5 @@
-#ifndef INCLUDE_HIRGON_PDF_INFO_HPP
-#define INCLUDE_HIRGON_PDF_INFO_HPP
+#ifndef INCLUDE_ILLUMINATA_PDF_INFO_HPP
+#define INCLUDE_ILLUMINATA_PDF_INFO_HPP
 
 #include <algorithm>
 #include <filesystem>
@@ -15,8 +15,8 @@
 #include <gtkmm.h>
 #include <libadwaitamm.h>
 
-#include "hirgon/fmt.hpp"
-#include "hirgon/mupdf.hpp"
+#include "illuminata/fmt.hpp"
+#include "illuminata/mupdf.hpp"
 
 namespace illa {
 struct PdfPageInfo {
@@ -32,7 +32,7 @@ struct PdfInfo {
 
   explicit PdfInfo(std::filesystem::path pdf, int pno = 0)
       : path{std::move(pdf)}, doc{path.c_str()}, page{pno} {
-#if HIRGON_PRINT
+#if ILLUMINATA_PRINT
     fmt::print("Open {:?}\n", path);
 #endif
     update_page(pno);
@@ -41,7 +41,7 @@ struct PdfInfo {
   void update_page(int pno) {
     page = pno;
     if (valid_page(pno)) {
-#if HIRGON_PRINT
+#if ILLUMINATA_PRINT
       fmt::print("load page {}\n", pno);
 #endif
       mupdf::FzPage p = doc.fz_load_page(pno);
@@ -62,4 +62,4 @@ struct PdfInfo {
 };
 } // namespace illa
 
-#endif // INCLUDE_HIRGON_PDF_INFO_HPP
+#endif // INCLUDE_ILLUMINATA_PDF_INFO_HPP

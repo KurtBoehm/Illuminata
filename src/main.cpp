@@ -4,7 +4,7 @@
 #include <giomm.h>
 #include <libadwaitamm.h>
 
-#include "hirgon/hirgon.hpp"
+#include "illuminata/illuminata.hpp"
 
 int main(int argc, char* argv[]) {
   if (argc > 2) {
@@ -12,6 +12,6 @@ int main(int argc, char* argv[]) {
   }
   auto path = (argc > 1) ? std::make_optional<std::filesystem::path>(argv[1]) : std::nullopt;
 
-  auto app = Adw::Application::create("org.kurbo96.hirgon", Gio::Application::Flags::NON_UNIQUE);
+  auto app = Adw::Application::create("org.kurbo96.illuminata", Gio::Application::Flags::NON_UNIQUE);
   return app->make_window_and_run<illa::PDFViewer>(0, nullptr, *app, path);
 }

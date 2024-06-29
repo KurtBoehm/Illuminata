@@ -1,5 +1,5 @@
-#ifndef INCLUDE_HIRGON_PDF_WINDOW_HPP
-#define INCLUDE_HIRGON_PDF_WINDOW_HPP
+#ifndef INCLUDE_ILLUMINATA_PDF_WINDOW_HPP
+#define INCLUDE_ILLUMINATA_PDF_WINDOW_HPP
 
 #include <algorithm>
 #include <filesystem>
@@ -18,17 +18,17 @@
 #include <libadwaitamm.h>
 #include <vector>
 
-#include "hirgon/fmt.hpp"
-#include "hirgon/geometry.hpp"
-#include "hirgon/mupdf.hpp"
-#include "hirgon/pdf/info.hpp"
-#include "hirgon/pdf/opengl.hpp"
-#include "hirgon/pdf/transform.hpp"
+#include "illuminata/fmt.hpp"
+#include "illuminata/geometry.hpp"
+#include "illuminata/mupdf.hpp"
+#include "illuminata/pdf/info.hpp"
+#include "illuminata/pdf/opengl.hpp"
+#include "illuminata/pdf/transform.hpp"
 
-#if !HIRGON_OPENGL
+#if !ILLUMINATA_OPENGL
 #include <cairomm/cairomm.h>
 #endif
-#if HIRGON_PRINT
+#if ILLUMINATA_PRINT
 #include <chrono>
 #endif
 
@@ -37,18 +37,18 @@ struct PDFViewer : public Adw::ApplicationWindow {
   std::optional<PdfInfo> pdf{};
   bool invert{};
 
-  std::conditional_t<HIRGON_OPENGL, Gtk::GLArea, Gtk::DrawingArea> draw_area{};
+  std::conditional_t<ILLUMINATA_OPENGL, Gtk::GLArea, Gtk::DrawingArea> draw_area{};
   Gtk::Button open_button{"Open PDF"};
 
   Transform trans{};
 
-#if HIRGON_OPENGL
+#if ILLUMINATA_OPENGL
   OpenGlState ogl{};
 #endif
 
   explicit PDFViewer(Adw::Application& app, std::optional<std::filesystem::path> path = {}) {
-    set_title("Hirgon");
-    set_icon_name("org.kurbo96.Hirgon");
+    set_title("Illuminata");
+    set_icon_name("org.kurbo96.Illuminata");
     set_default_size(800, 600);
 
     auto dark = app.get_style_manager()->property_dark();
@@ -56,7 +56,7 @@ struct PDFViewer : public Adw::ApplicationWindow {
     [[maybe_unused]] auto dark_conn =
       dark.signal_changed().connect([this, dark] { invert = dark.get_value(); });
 
-#if HIRGON_OPENGL
+#if ILLUMINATA_OPENGL
     [[maybe_unused]] auto realize_conn = draw_area.signal_realize().connect([&] {
       draw_area.make_current();
       if (draw_area.has_error()) {
@@ -79,14 +79,14 @@ struct PDFViewer : public Adw::ApplicationWindow {
 #else
     auto draw_op = [&](const std::shared_ptr<Cairo::Context>& ctx, int width, int height) {
 #endif
-#if HIRGON_PRINT
+#if ILLUMINATA_PRINT
       using Clock = std::chrono::steady_clock;
       using Dur = std::chrono::duration<double>;
       const auto t0 = Clock::now();
 #endif
 
       const auto scale_factor = draw_area.get_scale_factor();
-#if HIRGON_OPENGL
+#if ILLUMINATA_OPENGL
       const auto width = draw_area.get_width();
       const auto height = draw_area.get_height();
 #else
@@ -96,7 +96,7 @@ struct PDFViewer : public Adw::ApplicationWindow {
       const Dims dims = dims_base * scale_factor;
 
       if (!pdf.has_value() || !pdf->page_info.has_value()) {
-#if HIRGON_OPENGL
+#if ILLUMINATA_OPENGL
         return false;
 #else
         return;
@@ -112,7 +112,7 @@ struct PDFViewer : public Adw::ApplicationWindow {
       auto rclip = inter.fz_rect();
       auto irect = rclip.fz_transform_rect(mat).fz_round_rect();
 
-#if HIRGON_PRINT
+#if ILLUMINATA_PRINT
       const auto t1 = Clock::now();
 #endif
 
@@ -125,14 +125,14 @@ struct PDFViewer : public Adw::ApplicationWindow {
         dev.fz_close_device();
       }
 
-#if HIRGON_PRINT
+#if ILLUMINATA_PRINT
       const auto t2 = Clock::now();
 #endif
 
-#if HIRGON_OPENGL
+#if ILLUMINATA_OPENGL
       ogl.draw(pix, dims, off, invert);
 
-#if HIRGON_PRINT
+#if ILLUMINATA_PRINT
       const auto t3 = Clock::now();
       fmt::print("{} → {} → {} → {}×{} {}\n", dims_base, dims, f, pix.w(), pix.h(), pix.alpha());
       fmt::print("setup={}, pixmap={}, opengl={}\n", Dur{t1 - t0}, Dur{t2 - t1}, Dur{t3 - t2});
@@ -145,19 +145,19 @@ struct PDFViewer : public Adw::ApplicationWindow {
       auto pixbuf = Gdk::Pixbuf::create_from_data(
         pix.samples(), Gdk::Colorspace::RGB, bool(pix.alpha()), 8, pix.w(), pix.h(), pix.stride());
 
-#if HIRGON_PRINT
+#if ILLUMINATA_PRINT
       const auto t3 = Clock::now();
 #endif
 
       Gdk::Cairo::set_source_pixbuf(ctx, pixbuf, off.x, off.y);
 
-#if HIRGON_PRINT
+#if ILLUMINATA_PRINT
       const auto t4 = Clock::now();
 #endif
 
       ctx->paint();
 
-#if HIRGON_PRINT
+#if ILLUMINATA_PRINT
       const auto t5 = Clock::now();
       fmt::print("{} → {} → {} → {}×{} {}\n", dims_base, dims, f, pix.w(), pix.h(), pix.alpha());
       fmt::print("setup={}, pixmap={}, pixbuf={}, cairo={}, paint={}\n", Dur{t1 - t0}, Dur{t2 - t1},
@@ -264,11 +264,11 @@ struct PDFViewer : public Adw::ApplicationWindow {
     [[maybe_unused]] auto about_conn =
       about_action->signal_activate().connect([this](const Glib::VariantBase& /*var*/) {
         auto* dialog = Gtk::make_managed<Adw::AboutDialog>();
-        dialog->set_application_icon("org.kurbo96.Hirgon");
-        dialog->set_application_name("Hirgon");
+        dialog->set_application_icon("org.kurbo96.Illuminata");
+        dialog->set_application_name("Illuminata");
         dialog->set_developer_name("Kurt Böhm");
-        dialog->set_version(HIRGON_VERSION);
-        dialog->set_website("https://github.com/KurtBoehm/hirgon");
+        dialog->set_version(ILLUMINATA_VERSION);
+        dialog->set_website("https://github.com/KurtBoehm/illuminata");
         dialog->set_copyright("© 2024 Kurt Böhm");
 
         dialog->set_developers({"Kurt Böhm <kurbo96@gmail.com>"});
@@ -510,4 +510,4 @@ struct PDFViewer : public Adw::ApplicationWindow {
 };
 } // namespace illa
 
-#endif // INCLUDE_HIRGON_PDF_WINDOW_HPP
+#endif // INCLUDE_ILLUMINATA_PDF_WINDOW_HPP
