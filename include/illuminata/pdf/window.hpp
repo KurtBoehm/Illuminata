@@ -175,7 +175,7 @@ struct PDFViewer : public Adw::ApplicationWindow {
     auto tv = Adw::ToolbarView::create();
     tv->add_top_bar(bar);
     tv->set_content(draw_area);
-    tv->set_top_bar_style(Adw::ToolbarStyle::RAISED);
+    tv->set_top_bar_style(Adw::ToolbarView::Style::RAISED);
     [[maybe_unused]] auto conn_extend = property_fullscreened().signal_changed().connect(
       [this, tv] { tv->set_reveal_top_bars(!is_fullscreen()); });
     set_content(*tv);
