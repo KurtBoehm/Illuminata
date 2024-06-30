@@ -2,6 +2,7 @@
 #define INCLUDE_ILLUMINATA_PDF_WINDOW_HPP
 
 #include <algorithm>
+#include <chrono>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -22,25 +23,43 @@
 #include "illuminata/geometry.hpp"
 #include "illuminata/mupdf.hpp"
 #include "illuminata/pdf/info.hpp"
-#include "illuminata/pdf/opengl.hpp"
 #include "illuminata/pdf/transform.hpp"
 
-#if !ILLUMINATA_OPENGL
+#if ILLUMINATA_OPENGL
+#include "illuminata/pdf/opengl.hpp"
+#else
 #include <cairomm/cairomm.h>
-#endif
-#if ILLUMINATA_PRINT
-#include <chrono>
 #endif
 
 namespace illa {
+template<typename... T>
+inline void log([[maybe_unused]] fmt::format_string<T...> fmt, [[maybe_unused]] T&&... args) {
+#if ILLUMINATA_PRINT
+  fmt::print(fmt, std::forward<T>(args)...);
+#endif
+}
+
 struct PDFViewer : public Adw::ApplicationWindow {
+  struct GeomInfo {
+    Rect<float> rect;
+    float factor;
+    mupdf::FzMatrix fzmat;
+    Rect<float> rclip;
+    Vec2<float> offset;
+    mupdf::FzRect fzrclip;
+    mupdf::FzIrect fzirect;
+  };
+
+  using Clock = std::chrono::steady_clock;
+  using Dur = std::chrono::duration<double>;
+
   std::optional<PdfInfo> pdf{};
   bool invert{};
 
   std::conditional_t<ILLUMINATA_OPENGL, Gtk::GLArea, Gtk::DrawingArea> draw_area{};
   Gtk::Button open_button{"Open PDF"};
 
-  Transform trans{};
+  Transform transform{};
 
 #if ILLUMINATA_OPENGL
   OpenGlState ogl{};
@@ -76,93 +95,53 @@ struct PDFViewer : public Adw::ApplicationWindow {
       false);
 
     auto draw_op = [this](const Glib::RefPtr<Gdk::GLContext>& /*ctx*/) {
-#else
-    auto draw_op = [&](const std::shared_ptr<Cairo::Context>& ctx, int width, int height) {
-#endif
-#if ILLUMINATA_PRINT
-      using Clock = std::chrono::steady_clock;
-      using Dur = std::chrono::duration<double>;
-      const auto t0 = Clock::now();
-#endif
-
-      const auto scale_factor = draw_area.get_scale_factor();
-#if ILLUMINATA_OPENGL
-      const auto width = draw_area.get_width();
-      const auto height = draw_area.get_height();
-#else
-      ctx->scale(1.0 / scale_factor, 1.0 / scale_factor);
-#endif
-      const Dims dims_base{width, height};
-      const Dims dims = dims_base * scale_factor;
-
       if (!pdf.has_value() || !pdf->page_info.has_value()) {
-#if ILLUMINATA_OPENGL
         return false;
-#else
-        return;
-#endif
       }
 
-      const auto& pinfo = pdf->page_info;
-      const Rect rect{pinfo->page.fz_bound_page()};
-      const float f = doc_factor(Dims<float>(dims), rect);
-      const auto mat = mupdf::FzMatrix{}.fz_pre_scale(f, f);
-      const auto [inter, off] = trans.document_transform(dims, rect, scale_factor, f);
-
-      auto rclip = inter.fz_rect();
-      auto irect = rclip.fz_transform_rect(mat).fz_round_rect();
-
-#if ILLUMINATA_PRINT
+      const auto t0 = Clock::now();
+      const Dims dims_base{draw_area.get_width(), draw_area.get_height()};
+      const Dims dims = dims_base * draw_area.get_scale_factor();
+      auto geom = compute_geom(dims);
       const auto t1 = Clock::now();
-#endif
-
-      mupdf::FzPixmap pix{mupdf::FzColorspace::Fixed_RGB, irect, mupdf::FzSeparations{}, 0};
-      pix.fz_clear_pixmap_with_value(0xFF);
-      {
-        mupdf::FzDevice dev{mat, pix, irect};
-        mupdf::FzCookie cookie{};
-        pinfo->display_list.fz_run_display_list(dev, mupdf::FzMatrix{}, rclip, cookie);
-        dev.fz_close_device();
-      }
-
-#if ILLUMINATA_PRINT
+      mupdf::FzPixmap pix = render(geom);
       const auto t2 = Clock::now();
-#endif
-
-#if ILLUMINATA_OPENGL
-      ogl.draw(pix, dims, off, invert);
-
-#if ILLUMINATA_PRINT
+      ogl.draw(pix, dims, geom.offset, invert);
       const auto t3 = Clock::now();
-      fmt::print("{} → {} → {} → {}×{} {}\n", dims_base, dims, f, pix.w(), pix.h(), pix.alpha());
-      fmt::print("setup={}, pixmap={}, opengl={}\n", Dur{t1 - t0}, Dur{t2 - t1}, Dur{t3 - t2});
-#endif
+
+      log("{} → {} → {} → {}×{} {}\n", dims_base, dims, geom.f, pix.w(), pix.h(), pix.alpha());
+      log("setup={}, pixmap={}, opengl={}\n", Dur{t1 - t0}, Dur{t2 - t1}, Dur{t3 - t2});
 
       return true;
     };
     [[maybe_unused]] auto render_conn = draw_area.signal_render().connect(draw_op, true);
 #else
+    auto draw_op = [&](const std::shared_ptr<Cairo::Context>& ctx, int width, int height) {
+      if (!pdf.has_value() || !pdf->page_info.has_value()) {
+        return;
+      }
+
+      const auto t0 = Clock::now();
+
+      const auto factor = draw_area.get_scale_factor();
+      ctx->scale(1.0 / factor, 1.0 / factor);
+      const Dims dims_base{width, height};
+      const Dims dims{dims_base * factor};
+      auto geom = compute_geom(dims);
+      const auto t1 = Clock::now();
+      mupdf::FzPixmap pix = render(geom);
+      const auto t2 = Clock::now();
       auto pixbuf = Gdk::Pixbuf::create_from_data(
         pix.samples(), Gdk::Colorspace::RGB, bool(pix.alpha()), 8, pix.w(), pix.h(), pix.stride());
-
-#if ILLUMINATA_PRINT
       const auto t3 = Clock::now();
-#endif
-
-      Gdk::Cairo::set_source_pixbuf(ctx, pixbuf, off.x, off.y);
-
-#if ILLUMINATA_PRINT
+      Gdk::Cairo::set_source_pixbuf(ctx, pixbuf, geom.offset.x, geom.offset.y);
       const auto t4 = Clock::now();
-#endif
-
       ctx->paint();
-
-#if ILLUMINATA_PRINT
       const auto t5 = Clock::now();
-      fmt::print("{} → {} → {} → {}×{} {}\n", dims_base, dims, f, pix.w(), pix.h(), pix.alpha());
-      fmt::print("setup={}, pixmap={}, pixbuf={}, cairo={}, paint={}\n", Dur{t1 - t0}, Dur{t2 - t1},
-                 Dur{t3 - t2}, Dur{t4 - t3}, Dur{t5 - t4});
-#endif
+
+      log("{} → {} → {} → {}×{} {}\n", dims_base, dims, geom.factor, pix.w(), pix.h(), pix.alpha());
+      log("setup={}, pixmap={}, pixbuf={}, cairo={}, paint={}\n", Dur{t1 - t0}, Dur{t2 - t1},
+          Dur{t3 - t2}, Dur{t4 - t3}, Dur{t5 - t4});
     };
     draw_area.set_draw_func(draw_op);
 #endif
@@ -382,55 +361,55 @@ struct PDFViewer : public Adw::ApplicationWindow {
         case GDK_KEY_J:
         case GDK_KEY_Page_Down: {
           navigate_pages(1);
-          trans.reset();
+          transform.reset();
           return true;
         }
         case GDK_KEY_K:
         case GDK_KEY_Page_Up: {
           navigate_pages(-1);
-          trans.reset();
+          transform.reset();
           return true;
         }
         // On-Page Navigation
         case GDK_KEY_j:
         case GDK_KEY_Up: {
-          trans.off.y -= 1.F;
+          transform.off.y -= 1.F;
           draw_area.queue_draw();
           return true;
         }
         case GDK_KEY_h:
         case GDK_KEY_Left: {
-          trans.off.x -= 1.F;
+          transform.off.x -= 1.F;
           draw_area.queue_draw();
           return true;
         }
         case GDK_KEY_k:
         case GDK_KEY_Down: {
-          trans.off.y += 1.F;
+          transform.off.y += 1.F;
           draw_area.queue_draw();
           return true;
         }
         case GDK_KEY_l:
         case GDK_KEY_Right: {
-          trans.off.x += 1.F;
+          transform.off.x += 1.F;
           draw_area.queue_draw();
           return true;
         }
         case GDK_KEY_KP_Add:
         case GDK_KEY_plus: {
-          trans.scale *= 1.1F;
+          transform.scale *= 1.1F;
           draw_area.queue_draw();
           return true;
         }
         case GDK_KEY_KP_Subtract:
         case GDK_KEY_minus: {
-          trans.scale *= 0.9F;
+          transform.scale *= 0.9F;
           draw_area.queue_draw();
           return true;
         }
         case GDK_KEY_KP_0:
         case GDK_KEY_0: {
-          trans.reset();
+          transform.reset();
           draw_area.queue_draw();
           return true;
         }
@@ -445,13 +424,13 @@ struct PDFViewer : public Adw::ApplicationWindow {
     drag->set_button(GDK_BUTTON_MIDDLE);
     [[maybe_unused]] auto drag_update_conn =
       drag->signal_drag_update().connect([this](double start_x, double start_y) {
-        trans.drag_off = Vec2{float(start_x), float(start_y)};
+        transform.drag_off = Vec2{float(start_x), float(start_y)};
         draw_area.queue_draw();
       });
     [[maybe_unused]] auto drag_end_conn =
       drag->signal_drag_end().connect([this](double start_x, double start_y) {
-        trans.off -= Vec2{float(start_x), float(start_y)} / doc_factor();
-        trans.drag_off = {0.F};
+        transform.off -= Vec2{float(start_x), float(start_y)} / doc_factor();
+        transform.drag_off = {0.F};
         draw_area.queue_draw();
       });
     draw_area.add_controller(drag);
@@ -463,12 +442,12 @@ struct PDFViewer : public Adw::ApplicationWindow {
         auto event = scroll->get_current_event();
         switch (event->get_modifier_state()) {
         case Gdk::ModifierType::NO_MODIFIER_MASK: {
-          trans.off.y += float(dy);
+          transform.off.y += float(dy);
           draw_area.queue_draw();
           return true;
         }
         case Gdk::ModifierType::CONTROL_MASK: {
-          trans.scale *= 1.F - 0.1F * float(dy);
+          transform.scale *= 1.F - 0.1F * float(dy);
           draw_area.queue_draw();
           return true;
         }
@@ -481,7 +460,7 @@ struct PDFViewer : public Adw::ApplicationWindow {
   }
 
   float doc_factor(Dims<float> dims, Rect<float> rect) const {
-    return std::min(dims.w / rect.w(), dims.h / rect.h()) * trans.scale;
+    return std::min(dims.w / rect.w(), dims.h / rect.h()) * transform.scale;
   }
   float doc_factor() const {
     if (!pdf.has_value() || !pdf->page_info.has_value()) {
@@ -506,6 +485,36 @@ struct PDFViewer : public Adw::ApplicationWindow {
         draw_area.queue_draw();
       }
     }
+  }
+
+  GeomInfo compute_geom(const Dims<int>& dims) const {
+    const Rect rect{pdf->page_info->page.fz_bound_page()};
+    const auto f = doc_factor(Dims<float>(dims), rect);
+    const auto mat = mupdf::FzMatrix{}.fz_pre_scale(f, f);
+    const auto trans = transform.document_transform(dims, rect, draw_area.get_scale_factor(), f);
+    mupdf::FzRect fzrclip = trans.rclip.fz_rect();
+
+    return GeomInfo{
+      .rect = rect,
+      .factor = f,
+      .fzmat = mat,
+      .rclip = trans.rclip,
+      .offset = trans.offset,
+      .fzrclip = fzrclip,
+      .fzirect = fzrclip.fz_transform_rect(mat).fz_round_rect(),
+    };
+  }
+
+  mupdf::FzPixmap render(GeomInfo& geom) {
+    mupdf::FzPixmap pix{mupdf::FzColorspace::Fixed_RGB, geom.fzirect, mupdf::FzSeparations{}, 0};
+    pix.fz_clear_pixmap_with_value(0xFF);
+
+    mupdf::FzDevice dev{geom.fzmat, pix, geom.fzirect};
+    mupdf::FzCookie cookie{};
+    pdf->page_info->display_list.fz_run_display_list(dev, mupdf::FzMatrix{}, geom.fzrclip, cookie);
+    dev.fz_close_device();
+
+    return pix;
   }
 };
 } // namespace illa

@@ -4,15 +4,15 @@
 #include "illuminata/geometry.hpp"
 
 namespace illa {
+struct DocTransform {
+  Rect<float> rclip;
+  Vec2<float> offset;
+};
+
 struct Transform {
   float scale{1.F};
   Vec2<float> off{0.F, 0.F};
   Vec2<float> drag_off{0.F, 0.F};
-
-  struct DocTransform {
-    Rect<float> rclip;
-    Vec2<float> offset;
-  };
 
   void reset() {
     scale = 1.F;
