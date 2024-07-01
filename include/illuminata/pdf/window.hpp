@@ -39,15 +39,16 @@ inline void log([[maybe_unused]] fmt::format_string<T...> fmt, [[maybe_unused]] 
 #endif
 }
 
-struct PDFViewer : public Adw::ApplicationWindow {
+struct PdfViewer : public Adw::ApplicationWindow {
   struct GeomInfo {
-    Rect<float> rect;
+    Dims<int> dims_base;
+    Dims<int> dims_scaled;
+    int scale;
     float factor;
     mupdf::FzMatrix fzmat;
-    Rect<float> rclip;
     Vec2<float> offset;
-    mupdf::FzRect fzrclip;
-    mupdf::FzIrect fzirect;
+    mupdf::FzRect rclip;
+    mupdf::FzIrect irect;
   };
 
   using Clock = std::chrono::steady_clock;
@@ -57,7 +58,6 @@ struct PDFViewer : public Adw::ApplicationWindow {
   bool invert{};
 
   std::conditional_t<ILLUMINATA_OPENGL, Gtk::GLArea, Gtk::DrawingArea> draw_area{};
-  Gtk::Button open_button{"Open PDF"};
 
   Transform transform{};
 
@@ -65,7 +65,7 @@ struct PDFViewer : public Adw::ApplicationWindow {
   OpenGlState ogl{};
 #endif
 
-  explicit PDFViewer(Adw::Application& app, std::optional<std::filesystem::path> path = {}) {
+  explicit PdfViewer(Adw::Application& app, std::optional<std::filesystem::path> path = {}) {
     set_title("Illuminata");
     set_icon_name("org.kurbo96.Illuminata");
     set_default_size(800, 600);
@@ -100,16 +100,15 @@ struct PDFViewer : public Adw::ApplicationWindow {
       }
 
       const auto t0 = Clock::now();
-      const Dims dims_base{draw_area.get_width(), draw_area.get_height()};
-      const Dims dims = dims_base * draw_area.get_scale_factor();
-      auto geom = compute_geom(dims);
+      auto geom = compute_geom(draw_area.get_width(), draw_area.get_height());
       const auto t1 = Clock::now();
       mupdf::FzPixmap pix = render(geom);
       const auto t2 = Clock::now();
-      ogl.draw(pix, dims, geom.offset, invert);
+      ogl.draw(pix, geom.dims_scaled, geom.offset, invert);
       const auto t3 = Clock::now();
 
-      log("{} → {} → {} → {}×{} {}\n", dims_base, dims, geom.f, pix.w(), pix.h(), pix.alpha());
+      log("{} → {} → {} → {}×{} {}\n", geom.dims_base, geom.dims_scaled, geom.factor, pix.w(),
+          pix.h(), pix.alpha());
       log("setup={}, pixmap={}, opengl={}\n", Dur{t1 - t0}, Dur{t2 - t1}, Dur{t3 - t2});
 
       return true;
@@ -123,11 +122,8 @@ struct PDFViewer : public Adw::ApplicationWindow {
 
       const auto t0 = Clock::now();
 
-      const auto factor = draw_area.get_scale_factor();
-      ctx->scale(1.0 / factor, 1.0 / factor);
-      const Dims dims_base{width, height};
-      const Dims dims{dims_base * factor};
-      auto geom = compute_geom(dims);
+      auto geom = compute_geom(width, height);
+      ctx->scale(1.0 / geom.scale, 1.0 / geom.scale);
       const auto t1 = Clock::now();
       mupdf::FzPixmap pix = render(geom);
       const auto t2 = Clock::now();
@@ -139,7 +135,8 @@ struct PDFViewer : public Adw::ApplicationWindow {
       ctx->paint();
       const auto t5 = Clock::now();
 
-      log("{} → {} → {} → {}×{} {}\n", dims_base, dims, geom.factor, pix.w(), pix.h(), pix.alpha());
+      log("{} → {} → {} → {}×{} {}\n", geom.dims_base, geom.dims_scaled, geom.factor, pix.w(),
+          pix.h(), pix.alpha());
       log("setup={}, pixmap={}, pixbuf={}, cairo={}, paint={}\n", Dur{t1 - t0}, Dur{t2 - t1},
           Dur{t3 - t2}, Dur{t4 - t3}, Dur{t5 - t4});
     };
@@ -267,9 +264,10 @@ struct PDFViewer : public Adw::ApplicationWindow {
     menu_button.set_menu_model(menu);
     bar.pack_end(menu_button);
 
-    open_button.set_image_from_icon_name("document-open");
-    open_button.set_focusable(false);
-    [[maybe_unused]] auto open_conn = open_button.signal_clicked().connect([&]() {
+    auto* open_button = Gtk::make_managed<Gtk::Button>("Open PDF");
+    open_button->set_image_from_icon_name("document-open");
+    open_button->set_focusable(false);
+    [[maybe_unused]] auto open_conn = open_button->signal_clicked().connect([&]() {
       auto filter_pdf = Gtk::FileFilter::create();
       filter_pdf->set_name("PDF files");
       filter_pdf->add_mime_type("application/pdf");
@@ -300,7 +298,7 @@ struct PDFViewer : public Adw::ApplicationWindow {
         }
       });
     });
-    bar.pack_start(open_button);
+    bar.pack_start(*open_button);
 
     auto evk = Gtk::EventControllerKey::create();
     [[maybe_unused]] auto evk_conn = evk->signal_key_pressed().connect(
@@ -487,31 +485,37 @@ struct PDFViewer : public Adw::ApplicationWindow {
     }
   }
 
-  GeomInfo compute_geom(const Dims<int>& dims) const {
+  GeomInfo compute_geom(int width, int height) const {
+    const Dims dims_base{width, height};
+    const auto scale = draw_area.get_scale_factor();
+
     const Rect rect{pdf->page_info->page.fz_bound_page()};
-    const auto f = doc_factor(Dims<float>(dims), rect);
-    const auto mat = mupdf::FzMatrix{}.fz_pre_scale(f, f);
-    const auto trans = transform.document_transform(dims, rect, draw_area.get_scale_factor(), f);
-    mupdf::FzRect fzrclip = trans.rclip.fz_rect();
+    const auto f_base = doc_factor(Dims<float>(dims_base), rect);
+    const auto f_scaled = f_base * float(scale);
+
+    const auto mat = mupdf::FzMatrix{}.fz_pre_scale(f_scaled, f_scaled);
+    const auto trans = transform.document_transform(dims_base, rect, f_base, f_scaled);
+    mupdf::FzRect rclip = trans.rclip.fz_rect();
 
     return GeomInfo{
-      .rect = rect,
-      .factor = f,
+      .dims_base = dims_base,
+      .dims_scaled = dims_base * scale,
+      .scale = scale,
+      .factor = f_scaled,
       .fzmat = mat,
-      .rclip = trans.rclip,
       .offset = trans.offset,
-      .fzrclip = fzrclip,
-      .fzirect = fzrclip.fz_transform_rect(mat).fz_round_rect(),
+      .rclip = rclip,
+      .irect = rclip.fz_transform_rect(mat).fz_round_rect(),
     };
   }
 
   mupdf::FzPixmap render(GeomInfo& geom) {
-    mupdf::FzPixmap pix{mupdf::FzColorspace::Fixed_RGB, geom.fzirect, mupdf::FzSeparations{}, 0};
+    mupdf::FzPixmap pix{mupdf::FzColorspace::Fixed_RGB, geom.irect, mupdf::FzSeparations{}, 0};
     pix.fz_clear_pixmap_with_value(0xFF);
 
-    mupdf::FzDevice dev{geom.fzmat, pix, geom.fzirect};
+    mupdf::FzDevice dev{geom.fzmat, pix, geom.irect};
     mupdf::FzCookie cookie{};
-    pdf->page_info->display_list.fz_run_display_list(dev, mupdf::FzMatrix{}, geom.fzrclip, cookie);
+    pdf->page_info->display_list.fz_run_display_list(dev, mupdf::FzMatrix{}, geom.rclip, cookie);
     dev.fz_close_device();
 
     return pix;

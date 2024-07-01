@@ -11,7 +11,9 @@ struct DocTransform {
 
 struct Transform {
   float scale{1.F};
+  // Offset (document coordinates).
   Vec2<float> off{0.F, 0.F};
+  // Offset due to dragging (unscaled screen coordinates).
   Vec2<float> drag_off{0.F, 0.F};
 
   void reset() {
@@ -20,16 +22,27 @@ struct Transform {
     drag_off = {0.F, 0.F};
   }
 
-  [[nodiscard]] DocTransform document_transform(const Dims<int> dims, const Rect<float> rect,
-                                                int scale_factor, float f) const {
-    // In document coordinates
-    const auto area_dims = dims / f;
-    const auto area_center = area_dims.center();
-    const auto center = rect.center() + off - drag_off * scale_factor / f;
-    const auto view_area = Rect{area_dims} - area_center + center;
-    const auto inter = view_area.intersect(rect);
-    const auto view_area_min = inter - center + area_center;
-    return DocTransform{.rclip = inter, .offset = view_area_min.offset() * f};
+  // `dims_base`: View dimensions (unscaled view coordinates).
+  // `rect`: PDF page bounds (document coordinates).
+  // `f_base`: Scaling factor from document to unscaled view coordinates.
+  // `f_scaled`: Scaling factor from document to scaled view coordinates.
+  [[nodiscard]] DocTransform document_transform(const Dims<int> dims_base, const Rect<float> rect,
+                                                float f_base, float f_scaled) const {
+    // View dimensions (document coordinates).
+    const Dims area_dims = dims_base / f_base;
+    // Center of the view (starting at the origin, document coordinates).
+    const Vec2 area_center = area_dims.center();
+    // Center of the PDF page after applying the offset (document coordinates).
+    const Vec2 center = rect.center() + off - drag_off / f_base;
+    // The vector from area_center to center (document coordinates).
+    const Vec2 center_off = center - area_center;
+    // View area centered at the offset page center (document coordinates).
+    const Rect view_area = Rect{area_dims} + center_off;
+    // The part of the PDF page that is visible in the view (document coordinates).
+    const Rect inter = view_area.intersect(rect);
+    // The offset of the visible area from the origin (scaled view coordinates).
+    const Vec2 view_area_off = (inter - center_off).offset() * f_scaled;
+    return DocTransform{.rclip = inter, .offset = view_area_off};
   }
 };
 } // namespace illa

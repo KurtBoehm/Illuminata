@@ -19,11 +19,13 @@
 #include "illuminata/mupdf.hpp"
 
 namespace illa {
+// Information about a page in a PDF document relevant for rendering it.
 struct PdfPageInfo {
   mupdf::FzPage page;
   mupdf::FzDisplayList display_list;
 };
 
+// Information about a PDF document and the page currently opened.
 struct PdfInfo {
   std::filesystem::path path;
   mupdf::FzDocument doc;

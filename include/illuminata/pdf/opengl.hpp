@@ -11,6 +11,7 @@
 #include "illuminata/opengl.hpp"
 
 namespace illa {
+// A screen-filling quad used so that the fragment shader is called for every pixel.
 inline constexpr std::array<GLfloat, 12> vertex_data{
   -1.F, +1.F, // vertex 0
   +1.F, -1.F, // vertex 1
@@ -20,6 +21,7 @@ inline constexpr std::array<GLfloat, 12> vertex_data{
   +1.F, -1.F, // vertex 5
 };
 
+// Passing through the vertex coordinates of a screen-filling quad.
 inline constexpr char vertex_shader_code[] = "#version 320 es\n"
                                              "\n"
                                              "layout(location = 0) in vec2 position;\n"
@@ -28,22 +30,31 @@ inline constexpr char vertex_shader_code[] = "#version 320 es\n"
                                              "  gl_Position = vec4(position, 0.0, 1.0);\n"
                                              "}";
 
+// If the coordinate is in the visible area, fetch the correct texel and optionally inverts it,
+// otherwise returns a fully transparent color.
 inline constexpr char fragment_shader_code[] =
   "#version 320 es\n"
   "precision mediump float;\n"
   "\n"
   "out vec4 outColor;\n"
+  // {offset.x, windowDims.y - offset.y}
+  "uniform int offsets[2];\n"
   "uniform bool invert;\n"
-  "uniform int area[4];\n"
   "uniform sampler2D tex;\n"
   "\n"
   "void main() {\n"
   "  ivec2 coord = ivec2(gl_FragCoord);\n"
-  "  coord = ivec2(coord.x - area[0], area[1] - coord.y - 1);\n"
-  "  if (0 > coord.x || coord.x >= area[2] || 0 > coord.y || coord.y >= area[3]) {\n"
+  // The coordinate within tex, where the “offset” from above is relative to the upper left corner.
+  // Since gl_FragCoord.y increases from bottom to top, coord.y is
+  // (windowDims.y - 1 - coord.y) - offset.y
+  "  coord = ivec2(coord.x - offsets[0], offsets[1] - coord.y - 1);\n"
+  "  ivec2 texDims = textureSize(tex, 0);\n"
+  "  if (0 > coord.x || coord.x >= texDims.x || 0 > coord.y || coord.y >= texDims.y) {\n"
   "    outColor = vec4(0.0);\n"
   "  } else {\n"
   "    outColor = texelFetch(tex, coord, 0);\n"
+  //   For the inversion, convert the sRGB color to YCbCR, invert Y, and convert back.
+  //   Intuitively, this preserves hue and saturation (reasonably well) while inverting brightness.
   "    if (invert) {\n"
   "      const float h = 128.0 / 255.0;\n"
   "      float y  = 0.299 * outColor.r + 0.587 * outColor.g + 0.114 * outColor.b;\n"
@@ -59,16 +70,21 @@ inline constexpr char fragment_shader_code[] =
   "}";
 
 struct OpenGlState {
+  // An optional so that it can be created in `realize` and destroyed in `unrealize`.
   std::optional<gl::Program> prog{};
+  // An optional so that it can be created in `realize` and destroyed in `unrealize`.
   std::optional<gl::VertexArray> vtxs{};
+  // An optional so that it can be created in `realize` and destroyed in `unrealize`.
   std::optional<gl::Texture> tex{};
   GLint invert_uniform{};
-  GLint area_uniform{};
+  GLint offs_uniform{};
   GLint tex_uniform{};
 
+  // Called to initialize the GLArea.
   void realize() {
     gl::VertexArray& vao = vtxs.emplace();
 
+    // Set the vertex array buffer to a screen-filling quad.
     {
       GLuint buffer{};
       glGenBuffers(1, &buffer);
@@ -87,7 +103,7 @@ struct OpenGlState {
     program.attach(fragment);
     program.link();
     invert_uniform = program.uniform_location("invert");
-    area_uniform = program.uniform_location("area");
+    offs_uniform = program.uniform_location("offsets");
     tex_uniform = program.uniform_location("tex");
     program.detach(vertex);
     program.detach(fragment);
@@ -123,13 +139,8 @@ struct OpenGlState {
 
       {
         glUniform1i(invert_uniform, static_cast<GLint>(invert));
-        std::array<GLint, 4> arr{
-          GLint(std::round(off.x)),
-          dims.h - GLint(std::round(off.y)),
-          pix.w(),
-          pix.h(),
-        };
-        glUniform1iv(area_uniform, arr.size(), arr.data());
+        std::array<GLint, 2> arr{GLint(std::round(off.x)), GLint(dims.h - std::lround(off.y))};
+        glUniform1iv(offs_uniform, arr.size(), arr.data());
       }
 
       glEnableVertexAttribArray(0);

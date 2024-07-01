@@ -13,5 +13,5 @@ int main(int argc, char* argv[]) {
   auto path = (argc > 1) ? std::make_optional<std::filesystem::path>(argv[1]) : std::nullopt;
 
   auto app = Adw::Application::create("org.kurbo96.illuminata", Gio::Application::Flags::NON_UNIQUE);
-  return app->make_window_and_run<illa::PDFViewer>(0, nullptr, *app, path);
+  return app->make_window_and_run<illa::PdfViewer>(0, nullptr, *app, path);
 }
