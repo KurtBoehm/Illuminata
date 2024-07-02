@@ -471,6 +471,7 @@ struct PdfViewer : public Adw::ApplicationWindow {
   }
 
   void load_pdf(std::filesystem::path p) {
+    set_title(fmt::format("Illuminata: {}", p.filename()));
     pdf.emplace(std::move(p));
     draw_area.queue_draw();
   }
