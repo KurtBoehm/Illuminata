@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -444,15 +445,14 @@ struct PdfViewer : public Adw::ApplicationWindow {
         const auto shift =
           (mod & Gdk::ModifierType::SHIFT_MASK) != Gdk::ModifierType::NO_MODIFIER_MASK;
         mod &= ~Gdk::ModifierType::SHIFT_MASK;
-        const auto f = shift ? 10.F : 1.F;
         switch (mod) {
         case Gdk::ModifierType::NO_MODIFIER_MASK: {
-          transform.off.y += f * float(dy);
+          transform.off.y += (shift ? 10.F : 1.F) * float(dy);
           draw_area.queue_draw();
           return true;
         }
         case Gdk::ModifierType::CONTROL_MASK: {
-          transform.scale *= f * (1.F - 0.1F * float(dy));
+          transform.scale *= std::pow(1.F - (shift ? 0.5F : 0.1F), float(dy));
           draw_area.queue_draw();
           return true;
         }
