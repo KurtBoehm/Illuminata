@@ -303,6 +303,8 @@ struct PdfViewer : public Adw::ApplicationWindow {
     auto evk = Gtk::EventControllerKey::create();
     [[maybe_unused]] auto evk_conn = evk->signal_key_pressed().connect(
       [&](guint keyval, [[maybe_unused]] guint keycode, [[maybe_unused]] Gdk::ModifierType state) {
+        const bool is_shift = ((state & Gdk::ModifierType::SHIFT_MASK) != Gdk::ModifierType{});
+
         switch (keyval) {
         // General
         case GDK_KEY_r: {
@@ -371,25 +373,25 @@ struct PdfViewer : public Adw::ApplicationWindow {
         // On-Page Navigation
         case GDK_KEY_j:
         case GDK_KEY_Up: {
-          transform.off.y -= 1.F;
+          transform.off.y -= is_shift ? 10.F : 1.F;
           draw_area.queue_draw();
           return true;
         }
         case GDK_KEY_h:
         case GDK_KEY_Left: {
-          transform.off.x -= 1.F;
+          transform.off.x -= is_shift ? 10.F : 1.F;
           draw_area.queue_draw();
           return true;
         }
         case GDK_KEY_k:
         case GDK_KEY_Down: {
-          transform.off.y += 1.F;
+          transform.off.y += is_shift ? 10.F : 1.F;
           draw_area.queue_draw();
           return true;
         }
         case GDK_KEY_l:
         case GDK_KEY_Right: {
-          transform.off.x += 1.F;
+          transform.off.x += is_shift ? 10.F : 1.F;
           draw_area.queue_draw();
           return true;
         }
@@ -438,14 +440,19 @@ struct PdfViewer : public Adw::ApplicationWindow {
     [[maybe_unused]] auto scroll_conn = scroll->signal_scroll().connect(
       [this, scroll](double /*dx*/, double dy) {
         auto event = scroll->get_current_event();
-        switch (event->get_modifier_state()) {
+        auto mod = event->get_modifier_state();
+        const auto shift =
+          (mod & Gdk::ModifierType::SHIFT_MASK) != Gdk::ModifierType::NO_MODIFIER_MASK;
+        mod &= ~Gdk::ModifierType::SHIFT_MASK;
+        const auto f = shift ? 10.F : 1.F;
+        switch (mod) {
         case Gdk::ModifierType::NO_MODIFIER_MASK: {
-          transform.off.y += float(dy);
+          transform.off.y += f * float(dy);
           draw_area.queue_draw();
           return true;
         }
         case Gdk::ModifierType::CONTROL_MASK: {
-          transform.scale *= 1.F - 0.1F * float(dy);
+          transform.scale *= f * (1.F - 0.1F * float(dy));
           draw_area.queue_draw();
           return true;
         }
