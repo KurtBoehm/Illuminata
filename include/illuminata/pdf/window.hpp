@@ -360,38 +360,38 @@ struct PdfViewer : public Adw::ApplicationWindow {
         }
         // Page Navigation
         case GDK_KEY_J:
+        case GDK_KEY_Right:
+        case GDK_KEY_Down:
         case GDK_KEY_Page_Down: {
           navigate_pages(1);
           transform.reset();
           return true;
         }
         case GDK_KEY_K:
+        case GDK_KEY_Left:
+        case GDK_KEY_Up:
         case GDK_KEY_Page_Up: {
           navigate_pages(-1);
           transform.reset();
           return true;
         }
         // On-Page Navigation
-        case GDK_KEY_j:
-        case GDK_KEY_Up: {
+        case GDK_KEY_j: {
           transform.off.y -= is_shift ? 10.F : 1.F;
           draw_area.queue_draw();
           return true;
         }
-        case GDK_KEY_h:
-        case GDK_KEY_Left: {
+        case GDK_KEY_h: {
           transform.off.x -= is_shift ? 10.F : 1.F;
           draw_area.queue_draw();
           return true;
         }
-        case GDK_KEY_k:
-        case GDK_KEY_Down: {
+        case GDK_KEY_k: {
           transform.off.y += is_shift ? 10.F : 1.F;
           draw_area.queue_draw();
           return true;
         }
-        case GDK_KEY_l:
-        case GDK_KEY_Right: {
+        case GDK_KEY_l: {
           transform.off.x += is_shift ? 10.F : 1.F;
           draw_area.queue_draw();
           return true;
