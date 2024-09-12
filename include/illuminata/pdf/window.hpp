@@ -189,7 +189,7 @@ struct PdfViewer : public Adw::ApplicationWindow {
                    {"r", "Reload"},
                    {"c", "Toggle Cursor"},
                    {"F11", "Toggle Fullscreen"},
-                   {"Escape", "Unfullscreen or Close"},
+                   {"Escape", "Unfullscreen"},
                    {"q", "Close"},
                  },
                },
@@ -204,17 +204,17 @@ struct PdfViewer : public Adw::ApplicationWindow {
                {
                  "Page Navigation",
                  {
-                   {"<Shift>k Page_Up", "Previous Page"},
-                   {"<Shift>j Page_Down", "Next Page"},
+                   {"<Shift>k Left Up Page_Up", "Previous Page"},
+                   {"<Shift>j Down Right Page_Down", "Next Page"},
                  },
                },
                {
                  "On-Page Navigation",
                  {
-                   {"j Up", "Move Up"},
-                   {"h Left", "Move Left"},
-                   {"k Down", "Move Down"},
-                   {"l Right", "Move Right"},
+                   {"j", "Move Up"},
+                   {"h", "Move Left"},
+                   {"k", "Move Down"},
+                   {"l", "Move Right"},
                    {"KP_Add plus", "Zoom In"},
                    {"KP_Subtract minus", "Zoom Out"},
                    {"KP_0 0", "Reset View"},
