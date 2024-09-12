@@ -329,8 +329,6 @@ struct PdfViewer : public Adw::ApplicationWindow {
         case GDK_KEY_Escape: {
           if (is_fullscreen()) {
             unfullscreen();
-          } else {
-            close();
           }
           return true;
         }

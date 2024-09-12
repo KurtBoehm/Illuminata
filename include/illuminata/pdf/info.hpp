@@ -55,7 +55,7 @@ struct PdfInfo {
 
   void reload_doc() {
     doc = mupdf::FzDocument{path.c_str()};
-    update_page(std::min(page, doc.fz_count_pages() - 1));
+    update_page(std::max(std::min(page, doc.fz_count_pages() - 1), 0));
   }
 
   [[nodiscard]] bool valid_page(int pno) const {
