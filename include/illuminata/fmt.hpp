@@ -2,6 +2,7 @@
 #define INCLUDE_ILLUMINATA_FMT_HPP
 
 // IWYU pragma: begin_exports
+#include <fmt/base.h>
 #include <fmt/chrono.h>
 #include <fmt/core.h>
 #include <fmt/format.h>

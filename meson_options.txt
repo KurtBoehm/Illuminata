@@ -6,5 +6,5 @@ option(
 option(
   'print',
   type: 'boolean',
-  value: true,
+  value: false,
 )

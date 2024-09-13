@@ -15,8 +15,11 @@
 #include <gtkmm.h>
 #include <libadwaitamm.h>
 
-#include "illuminata/fmt.hpp"
 #include "illuminata/mupdf.hpp"
+
+#if ILLUMINATA_PRINT
+#include "illuminata/fmt.hpp"
+#endif
 
 namespace illa {
 // Information about a page in a PDF document relevant for rendering it.
@@ -49,6 +52,9 @@ struct PdfInfo {
       mupdf::FzPage p = doc.fz_load_page(pno);
       page_info = PdfPageInfo(p, p.fz_new_display_list_from_page());
     } else {
+#if ILLUMINATA_PRINT
+      fmt::print("reset page info\n");
+#endif
       page_info.reset();
     }
   }

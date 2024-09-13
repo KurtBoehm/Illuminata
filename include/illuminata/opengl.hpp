@@ -17,60 +17,60 @@
 
 namespace gl {
 enum struct ShaderKind {
-  VERTEX_SHADER = GL_VERTEX_SHADER,
-  FRAGMENT_SHADER = GL_FRAGMENT_SHADER,
+  vertex_shader = GL_VERTEX_SHADER,
+  fragment_shader = GL_FRAGMENT_SHADER,
 };
 inline auto format_as(ShaderKind f) {
   return fmt::underlying(f);
 }
 
 enum struct BufferBindingTarget {
-  ARRAY_BUFFER = GL_ARRAY_BUFFER,
-  ATOMIC_COUNTER_BUFFER = GL_ATOMIC_COUNTER_BUFFER,
-  COPY_READ_BUFFER = GL_COPY_READ_BUFFER,
-  COPY_WRITE_BUFFER = GL_COPY_WRITE_BUFFER,
-  DISPATCH_INDIRECT_BUFFER = GL_DISPATCH_INDIRECT_BUFFER,
-  DRAW_INDIRECT_BUFFER = GL_DRAW_INDIRECT_BUFFER,
-  ELEMENT_ARRAY_BUFFER = GL_ELEMENT_ARRAY_BUFFER,
-  PIXEL_PACK_BUFFER = GL_PIXEL_PACK_BUFFER,
-  PIXEL_UNPACK_BUFFER = GL_PIXEL_UNPACK_BUFFER,
-  QUERY_BUFFER = GL_QUERY_BUFFER,
-  SHADER_STORAGE_BUFFER = GL_SHADER_STORAGE_BUFFER,
-  TEXTURE_BUFFER = GL_TEXTURE_BUFFER,
-  TRANSFORM_FEEDBACK_BUFFER = GL_TRANSFORM_FEEDBACK_BUFFER,
-  UNIFORM_BUFFER = GL_UNIFORM_BUFFER,
+  array_buffer = GL_ARRAY_BUFFER,
+  atomic_counter_buffer = GL_ATOMIC_COUNTER_BUFFER,
+  copy_read_buffer = GL_COPY_READ_BUFFER,
+  copy_write_buffer = GL_COPY_WRITE_BUFFER,
+  dispatch_indirect_buffer = GL_DISPATCH_INDIRECT_BUFFER,
+  draw_indirect_buffer = GL_DRAW_INDIRECT_BUFFER,
+  element_array_buffer = GL_ELEMENT_ARRAY_BUFFER,
+  pixel_pack_buffer = GL_PIXEL_PACK_BUFFER,
+  pixel_unpack_buffer = GL_PIXEL_UNPACK_BUFFER,
+  query_buffer = GL_QUERY_BUFFER,
+  shader_storage_buffer = GL_SHADER_STORAGE_BUFFER,
+  texture_buffer = GL_TEXTURE_BUFFER,
+  transform_feedback_buffer = GL_TRANSFORM_FEEDBACK_BUFFER,
+  uniform_buffer = GL_UNIFORM_BUFFER,
 };
 
 enum struct TextureKind {
-  TEXTURE_1D = GL_TEXTURE_1D,
-  TEXTURE_2D = GL_TEXTURE_2D,
-  TEXTURE_3D = GL_TEXTURE_3D,
-  TEXTURE_RECTANGLE = GL_TEXTURE_RECTANGLE,
-  TEXTURE_BUFFER = GL_TEXTURE_BUFFER,
-  TEXTURE_CUBE_MAP = GL_TEXTURE_CUBE_MAP,
-  TEXTURE_1D_ARRAY = GL_TEXTURE_1D_ARRAY,
-  TEXTURE_2D_ARRAY = GL_TEXTURE_2D_ARRAY,
-  TEXTURE_CUBE_MAP_ARRAY = GL_TEXTURE_CUBE_MAP_ARRAY,
-  TEXTURE_2D_MULTISAMPLE = GL_TEXTURE_2D_MULTISAMPLE,
-  TEXTURE_2D_MULTISAMPLE_ARRAY = GL_TEXTURE_2D_MULTISAMPLE_ARRAY,
+  texture_1d = GL_TEXTURE_1D,
+  texture_2d = GL_TEXTURE_2D,
+  texture_3d = GL_TEXTURE_3D,
+  texture_rectangle = GL_TEXTURE_RECTANGLE,
+  texture_buffer = GL_TEXTURE_BUFFER,
+  texture_cube_map = GL_TEXTURE_CUBE_MAP,
+  texture_1d_array = GL_TEXTURE_1D_ARRAY,
+  texture_2d_array = GL_TEXTURE_2D_ARRAY,
+  texture_cube_map_array = GL_TEXTURE_CUBE_MAP_ARRAY,
+  texture_2d_multisample = GL_TEXTURE_2D_MULTISAMPLE,
+  texture_2d_multisample_array = GL_TEXTURE_2D_MULTISAMPLE_ARRAY,
 };
 
 enum struct PixelFormat {
-  RED = GL_RED,
-  RG = GL_RG,
-  RGB = GL_RGB,
-  RGBA = GL_RGBA,
+  red = GL_RED,
+  rg = GL_RG,
+  rgb = GL_RGB,
+  rgba = GL_RGBA,
 };
 
 enum struct PixelKind {
-  U8 = GL_UNSIGNED_BYTE,
-  I8 = GL_BYTE,
-  U16 = GL_UNSIGNED_SHORT,
-  I16 = GL_SHORT,
-  U32 = GL_UNSIGNED_INT,
-  I32 = GL_INT,
-  F16 = GL_HALF_FLOAT,
-  F32 = GL_FLOAT,
+  u8 = GL_UNSIGNED_BYTE,
+  i8 = GL_BYTE,
+  u16 = GL_UNSIGNED_SHORT,
+  i16 = GL_SHORT,
+  u32 = GL_UNSIGNED_INT,
+  i32 = GL_INT,
+  f16 = GL_HALF_FLOAT,
+  f32 = GL_FLOAT,
 };
 
 struct Shader {
@@ -117,7 +117,7 @@ struct Shader {
       fmt::print("msg: {}", msg);
       throw std::runtime_error{
         fmt::format("Compile failure in {} shader:\n{}",
-                    (kind_ == ShaderKind::VERTEX_SHADER) ? "vertex" : "fragment", msg)};
+                    (kind_ == ShaderKind::vertex_shader) ? "vertex" : "fragment", msg)};
     }
   }
 

@@ -5,10 +5,13 @@
 #include <cmath>
 #include <optional>
 
-#include "illuminata/fmt.hpp"
 #include "illuminata/geometry.hpp"
 #include "illuminata/mupdf.hpp"
 #include "illuminata/opengl.hpp"
+
+#if ILLUMINATA_PRINT
+#include "illuminata/fmt.hpp"
+#endif
 
 namespace illa {
 // A screen-filling quad used so that the fragment shader is called for every pixel.
@@ -95,8 +98,8 @@ struct OpenGlState {
       glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
-    gl::Shader vertex{gl::ShaderKind::VERTEX_SHADER, vertex_shader_code};
-    gl::Shader fragment{gl::ShaderKind::FRAGMENT_SHADER, fragment_shader_code};
+    gl::Shader vertex{gl::ShaderKind::vertex_shader, vertex_shader_code};
+    gl::Shader fragment{gl::ShaderKind::fragment_shader, fragment_shader_code};
 
     gl::Program& program = prog.emplace();
     program.attach(vertex);
@@ -108,7 +111,7 @@ struct OpenGlState {
     program.detach(vertex);
     program.detach(fragment);
 
-    tex.emplace(gl::TextureKind::TEXTURE_2D);
+    tex.emplace(gl::TextureKind::texture_2d);
   }
 
   void unrealize() {
@@ -124,7 +127,7 @@ struct OpenGlState {
       auto prog_ctx = prog.value().use();
       auto& vao = vtxs.value();
       auto vao_ctx = vao.bind();
-      auto buf_ctx = vao.bind_buffer(gl::BufferBindingTarget::ARRAY_BUFFER);
+      auto buf_ctx = vao.bind_buffer(gl::BufferBindingTarget::array_buffer);
 
       {
         gl::TextureUnit tu{0};
@@ -133,7 +136,7 @@ struct OpenGlState {
 #if ILLUMINATA_PRINT
         fmt::print("load: {}×{}×{}\n", pix.w(), pix.h(), pix.s());
 #endif
-        tx.load(pix.samples(), pix.w(), pix.h(), gl::PixelFormat::RGB);
+        tx.load(pix.samples(), pix.w(), pix.h(), gl::PixelFormat::rgb);
         tu.set_uniform(tex_uniform);
       }
 
