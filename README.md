@@ -1,7 +1,7 @@
 # <img src="./data/icons/org.kurbo96.Illuminata.svg" style="height: 1em;"/> Illuminata
 
 A PDF viewer geared towards presentations, featuring support for a full-screen mode, hiding the cursor, panning and zooming, and a dark mode with luminance-only inversion.
-It is mainly controlled through keyboard shortcuts, which can be viewed in a shortcuts window, and includes mouse support for panning (movement while clicking the middle button) and zooming (scrolling while holding the control key).
+It is mainly controlled through keyboard shortcuts, which can be viewed in a shortcuts window, but also includes mouse support for panning (scrolling or movement while clicking the middle button) and zooming (scrolling while holding the control key), while zooming and panning by scrolling uses smaller steps when holding the shift key.
 Illuminata uses _GTK_ together with _Adwaita_ for the UI, _MuPDF_ for high-quality PDF rendering, and either `cairomm` or a much more efficient _OpenGL_ implementation (the default) for displaying the rendered PDF.
 
 ## Screenshots

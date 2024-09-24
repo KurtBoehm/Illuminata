@@ -435,9 +435,10 @@ struct PdfViewer : public Adw::ApplicationWindow {
     draw_area.add_controller(drag);
 
     auto scroll = Gtk::EventControllerScroll::create();
-    scroll->set_flags(Gtk::EventControllerScroll::Flags::VERTICAL);
+    scroll->set_flags(Gtk::EventControllerScroll::Flags::VERTICAL |
+                      Gtk::EventControllerScroll::Flags::HORIZONTAL);
     [[maybe_unused]] auto scroll_conn = scroll->signal_scroll().connect(
-      [this, scroll](double /*dx*/, double dy) {
+      [this, scroll](double dx, double dy) {
         auto event = scroll->get_current_event();
         auto mod = event->get_modifier_state();
         const auto shift =
@@ -445,12 +446,13 @@ struct PdfViewer : public Adw::ApplicationWindow {
         mod &= ~Gdk::ModifierType::SHIFT_MASK;
         switch (mod) {
         case Gdk::ModifierType::NO_MODIFIER_MASK: {
-          transform.off.y += (shift ? 10.F : 1.F) * float(dy);
+          transform.off.x += (shift ? 1.F : 20.F) * float(dx);
+          transform.off.y += (shift ? 1.F : 20.F) * float(dy);
           draw_area.queue_draw();
           return true;
         }
         case Gdk::ModifierType::CONTROL_MASK: {
-          transform.scale *= std::pow(1.F - (shift ? 0.5F : 0.1F), float(dy));
+          transform.scale *= std::pow(1.F - (shift ? 0.02F : 0.1F), float(dy));
           draw_area.queue_draw();
           return true;
         }
