@@ -59,13 +59,17 @@ struct PdfInfo {
     }
   }
 
+  [[nodiscard]] int page_num() const {
+    return doc.fz_count_pages();
+  }
+
   void reload_doc() {
     doc = mupdf::FzDocument{path.c_str()};
-    update_page(std::max(std::min(page, doc.fz_count_pages() - 1), 0));
+    update_page(std::max(std::min(page, page_num() - 1), 0));
   }
 
   [[nodiscard]] bool valid_page(int pno) const {
-    return 0 <= pno && pno < doc.fz_count_pages();
+    return 0 <= pno && pno < page_num();
   }
 };
 } // namespace illa

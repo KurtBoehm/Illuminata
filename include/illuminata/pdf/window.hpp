@@ -40,6 +40,16 @@ inline void log([[maybe_unused]] fmt::format_string<T...> fmt, [[maybe_unused]] 
 #endif
 }
 
+namespace params {
+struct NavigateToPageParams {
+  bool update_spin = true;
+};
+struct UpdatedPdfPageParams {
+  bool pdf_changed = true;
+  bool update_spin = true;
+};
+} // namespace params
+
 struct PdfViewer : public Adw::ApplicationWindow {
   struct GeomInfo {
     Dims<int> dims_base;
@@ -59,6 +69,7 @@ struct PdfViewer : public Adw::ApplicationWindow {
   bool invert{};
 
   std::conditional_t<ILLUMINATA_OPENGL, Gtk::GLArea, Gtk::DrawingArea> draw_area{};
+  Gtk::SpinButton page_spin{};
 
   Transform transform{};
 
@@ -144,6 +155,8 @@ struct PdfViewer : public Adw::ApplicationWindow {
     draw_area.set_draw_func(draw_op);
 #endif
 
+    draw_area.set_focusable();
+
     [[maybe_unused]] auto scale_conn =
       draw_area.property_scale_factor().signal_changed().connect([&] { draw_area.queue_draw(); });
 
@@ -156,10 +169,6 @@ struct PdfViewer : public Adw::ApplicationWindow {
     [[maybe_unused]] auto conn_extend = property_fullscreened().signal_changed().connect(
       [this, tv] { tv->set_reveal_top_bars(!is_fullscreen()); });
     set_content(*tv);
-
-    if (path.has_value()) {
-      load_pdf(*path);
-    }
 
     Gtk::PopoverMenu popover{};
     auto menu = Gio::Menu::create();
@@ -184,41 +193,45 @@ struct PdfViewer : public Adw::ApplicationWindow {
 
         for (const auto& [gname, gkv] : std::vector<Group>{
                {
-                 "General",
-                 {
-                   {"r", "Reload"},
-                   {"c", "Toggle Cursor"},
-                   {"F11", "Toggle Fullscreen"},
-                   {"Escape", "Unfullscreen"},
-                   {"q", "Close"},
-                 },
+                 .name = "General",
+                 .kv =
+                   {
+                     {"r", "Reload"},
+                     {"c", "Toggle Cursor"},
+                     {"F11", "Toggle Fullscreen"},
+                     {"Escape", "Unfullscreen"},
+                     {"q", "Close"},
+                   },
                },
                {
-                 "Visual Style",
-                 {
-                   {"i", "Toggle Inverted Brightness"},
-                   {"m", "Switch Color Scheme"},
-                   {"<Shift>m", "Revert Color Scheme"},
-                 },
+                 .name = "Visual Style",
+                 .kv =
+                   {
+                     {"i", "Toggle Inverted Brightness"},
+                     {"m", "Switch Color Scheme"},
+                     {"<Shift>m", "Revert Color Scheme"},
+                   },
                },
                {
-                 "Page Navigation",
-                 {
-                   {"<Shift>k Left Up Page_Up", "Previous Page"},
-                   {"<Shift>j Down Right Page_Down", "Next Page"},
-                 },
+                 .name = "Page Navigation",
+                 .kv =
+                   {
+                     {"<Shift>k Left Up Page_Up", "Previous Page"},
+                     {"<Shift>j Down Right Page_Down", "Next Page"},
+                   },
                },
                {
-                 "On-Page Navigation",
-                 {
-                   {"j", "Move Up"},
-                   {"h", "Move Left"},
-                   {"k", "Move Down"},
-                   {"l", "Move Right"},
-                   {"KP_Add plus", "Zoom In"},
-                   {"KP_Subtract minus", "Zoom Out"},
-                   {"KP_0 0", "Reset View"},
-                 },
+                 .name = "On-Page Navigation",
+                 .kv =
+                   {
+                     {"j", "Move Up"},
+                     {"h", "Move Left"},
+                     {"k", "Move Down"},
+                     {"l", "Move Right"},
+                     {"KP_Add plus", "Zoom In"},
+                     {"KP_Subtract minus", "Zoom Out"},
+                     {"KP_0 0", "Reset View"},
+                   },
                },
              }) {
           Gtk::ShortcutsGroup g{};
@@ -301,6 +314,18 @@ struct PdfViewer : public Adw::ApplicationWindow {
     });
     bar.pack_start(*open_button);
 
+    // page_spin.set_adjustment(Gtk::Adjustment::create(0, 0, 0));
+    page_spin.set_increments(1, 10);
+    page_spin.signal_value_changed().connect([this] {
+      if (pdf.has_value()) {
+        const auto page = page_spin.get_value_as_int() - 1;
+        if (page != pdf->page) {
+          navigate_to_page(page, {.update_spin = false});
+        }
+      }
+    });
+    bar.pack_start(page_spin);
+
     auto evk = Gtk::EventControllerKey::create();
     [[maybe_unused]] auto evk_conn = evk->signal_key_pressed().connect(
       [&](guint keyval, [[maybe_unused]] guint keycode, [[maybe_unused]] Gdk::ModifierType state) {
@@ -311,7 +336,7 @@ struct PdfViewer : public Adw::ApplicationWindow {
         case GDK_KEY_r: {
           if (pdf.has_value()) {
             pdf->reload_doc();
-            draw_area.queue_draw();
+            updated_pdf_page();
           }
           return true;
         }
@@ -419,6 +444,12 @@ struct PdfViewer : public Adw::ApplicationWindow {
       true);
     add_controller(evk);
 
+    auto click = Gtk::GestureClick::create();
+    click->set_button(GDK_BUTTON_PRIMARY);
+    click->signal_pressed().connect(
+      [this](int /*n_press*/, double /*x*/, double /*y*/) { draw_area.grab_focus(); });
+    draw_area.add_controller(click);
+
     auto drag = Gtk::GestureDrag::create();
     drag->set_button(GDK_BUTTON_MIDDLE);
     [[maybe_unused]] auto drag_update_conn =
@@ -462,6 +493,10 @@ struct PdfViewer : public Adw::ApplicationWindow {
       },
       true);
     draw_area.add_controller(scroll);
+
+    if (path.has_value()) {
+      load_pdf(*path);
+    }
   }
 
   float doc_factor(Dims<float> dims, Rect<float> rect) const {
@@ -472,7 +507,7 @@ struct PdfViewer : public Adw::ApplicationWindow {
       return 0.F;
     }
 
-    const Dims dims{draw_area.get_width(), draw_area.get_height()};
+    const Dims dims{.w = draw_area.get_width(), .h = draw_area.get_height()};
     const Rect rect{pdf->page_info->page.fz_bound_page()};
     return doc_factor(Dims<float>(dims), rect);
   }
@@ -480,7 +515,7 @@ struct PdfViewer : public Adw::ApplicationWindow {
   void load_pdf(std::filesystem::path p) {
     set_title(fmt::format("Illuminata: {}", p.filename()));
     pdf.emplace(std::move(p));
-    draw_area.queue_draw();
+    updated_pdf_page();
   }
 
   void navigate_pages(int direction) {
@@ -488,13 +523,32 @@ struct PdfViewer : public Adw::ApplicationWindow {
       const auto new_page = pdf->page + direction;
       if (pdf->valid_page(new_page)) {
         pdf->update_page(new_page);
-        draw_area.queue_draw();
+        updated_pdf_page({.pdf_changed = false});
       }
     }
   }
 
+  void navigate_to_page(int page, params::NavigateToPageParams params = {}) {
+    if (pdf.has_value()) {
+      if (pdf->valid_page(page)) {
+        pdf->update_page(page);
+        updated_pdf_page({.pdf_changed = false, .update_spin = params.update_spin});
+      }
+    }
+  }
+
+  void updated_pdf_page(params::UpdatedPdfPageParams params = {}) {
+    if (pdf.has_value() && params.update_spin) {
+      if (params.pdf_changed) {
+        page_spin.set_range(1, pdf->page_num());
+      }
+      page_spin.set_value(pdf->page + 1);
+    }
+    draw_area.queue_draw();
+  }
+
   GeomInfo compute_geom(int width, int height) const {
-    const Dims dims_base{width, height};
+    const Dims dims_base{.w = width, .h = height};
     const auto scale = draw_area.get_scale_factor();
 
     const Rect rect{pdf->page_info->page.fz_bound_page()};
