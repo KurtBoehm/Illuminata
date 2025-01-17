@@ -1,0 +1,8 @@
+[wrap-git]
+url = https://github.com/erikzenker/inotify-cpp.git
+revision = head
+clone-recursive = true
+patch_directory = inotify-cpp
+
+[provide]
+inotify-cpp = inotify_cpp_dep

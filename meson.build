@@ -4,7 +4,7 @@ project(
   version: '1.0.0',
   license: 'GPL-3.0-or-later',
   default_options: {
-    'cpp_std': 'c++20',
+    'cpp_std': 'c++23',
     'warning_level': '3',
     'buildtype': 'release',
     'b_ndebug': 'true',
@@ -30,6 +30,7 @@ subdir('data')
 deps = [
   dependency('fmt'),
   dependency('gtkmm-4.0'),
+  dependency('inotify-cpp'),
   dependency('libadwaita-1'),
   dependency('libadwaitamm-1'),
   dependency('mupdf'),

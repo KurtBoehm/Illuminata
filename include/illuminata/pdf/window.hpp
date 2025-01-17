@@ -7,8 +7,10 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <thread>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 #include <gdk/gdk.h>
 #include <gdk/gdkkeysyms.h>
@@ -17,8 +19,8 @@
 #include <glib.h>
 #include <glibmm.h>
 #include <gtkmm.h>
+#include <inotify-cpp/NotifierBuilder.h>
 #include <libadwaitamm.h>
-#include <vector>
 
 #include "illuminata/fmt.hpp"
 #include "illuminata/geometry.hpp"
@@ -50,6 +52,22 @@ struct UpdatedPdfPageParams {
 };
 } // namespace params
 
+struct Notifier {
+  sigc::signal<void()> signal_close_write;
+  Glib::Dispatcher dispatch_close_write;
+  inotify::NotifierBuilder notify = inotify::BuildNotifier().onEvent(
+    inotify::Event::close_write,
+    [this](const inotify::Notification& /*n*/) { dispatch_close_write(); });
+  std::jthread watcher{[this] { notify.run(); }};
+
+  Notifier() {
+    dispatch_close_write.connect([this] { signal_close_write(); });
+  }
+  ~Notifier() {
+    notify.stop();
+  }
+};
+
 struct PdfViewer : public Adw::ApplicationWindow {
   struct GeomInfo {
     Dims<int> dims_base;
@@ -66,6 +84,7 @@ struct PdfViewer : public Adw::ApplicationWindow {
   using Dur = std::chrono::duration<double>;
 
   std::optional<PdfInfo> pdf{};
+  Notifier notifier{};
   bool invert{};
 
   std::conditional_t<ILLUMINATA_OPENGL, Gtk::GLArea, Gtk::DrawingArea> draw_area{};
@@ -314,7 +333,6 @@ struct PdfViewer : public Adw::ApplicationWindow {
     });
     bar.pack_start(*open_button);
 
-    // page_spin.set_adjustment(Gtk::Adjustment::create(0, 0, 0));
     page_spin.set_increments(1, 10);
     page_spin.signal_value_changed().connect([this] {
       if (pdf.has_value()) {
@@ -494,6 +512,12 @@ struct PdfViewer : public Adw::ApplicationWindow {
       true);
     draw_area.add_controller(scroll);
 
+    notifier.signal_close_write.connect([&] {
+      log("close_write {}\n", pdf.transform([](const PdfInfo& i) { return i.path; }));
+      pdf->reload_doc();
+      updated_pdf_page();
+    });
+
     if (path.has_value()) {
       load_pdf(*path);
     }
@@ -512,9 +536,13 @@ struct PdfViewer : public Adw::ApplicationWindow {
     return doc_factor(Dims<float>(dims), rect);
   }
 
-  void load_pdf(std::filesystem::path p) {
+  void load_pdf(const std::filesystem::path& p) {
     set_title(fmt::format("Illuminata: {}", p.filename()));
-    pdf.emplace(std::move(p));
+    if (pdf.has_value()) {
+      notifier.notify.unwatchFile(pdf->path);
+    }
+    pdf.emplace(p);
+    notifier.notify.watchFile(p);
     updated_pdf_page();
   }
 
