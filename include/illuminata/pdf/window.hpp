@@ -85,6 +85,7 @@ struct PdfViewer : public Adw::ApplicationWindow {
 
   std::optional<PdfInfo> pdf{};
   Notifier notifier{};
+  bool supersample{};
   bool invert{};
 
   std::conditional_t<ILLUMINATA_OPENGL, Gtk::GLArea, Gtk::DrawingArea> draw_area{};
@@ -130,11 +131,15 @@ struct PdfViewer : public Adw::ApplicationWindow {
         return false;
       }
 
+      const auto subsample = unsigned(supersample);
       const auto t0 = Clock::now();
       auto geom = compute_geom(draw_area.get_width(), draw_area.get_height());
       const auto t1 = Clock::now();
-      mupdf::FzPixmap pix = render(geom);
+      mupdf::FzPixmap pix = render(geom, int(1U << subsample));
       const auto t2 = Clock::now();
+      if (supersample) {
+        pix.fz_subsample_pixmap(int(subsample));
+      }
       ogl.draw(pix, geom.dims_scaled, geom.offset, invert);
       const auto t3 = Clock::now();
 
@@ -223,12 +228,13 @@ struct PdfViewer : public Adw::ApplicationWindow {
                    },
                },
                {
-                 .name = "Visual Style",
+                 .name = "Visuals",
                  .kv =
                    {
                      {"i", "Toggle Inverted Brightness"},
                      {"m", "Switch Color Scheme"},
                      {"<Shift>m", "Revert Color Scheme"},
+                     {"s", "Toggle Supersampling"},
                    },
                },
                {
@@ -397,6 +403,11 @@ struct PdfViewer : public Adw::ApplicationWindow {
         case GDK_KEY_M: {
           auto style_manager = app.get_style_manager();
           style_manager->set_color_scheme(Adw::ColorScheme::DEFAULT);
+          return true;
+        }
+        case GDK_KEY_s: {
+          supersample = !supersample;
+          draw_area.queue_draw();
           return true;
         }
         // Page Navigation
@@ -599,13 +610,17 @@ struct PdfViewer : public Adw::ApplicationWindow {
     };
   }
 
-  mupdf::FzPixmap render(GeomInfo& geom) {
-    mupdf::FzPixmap pix{mupdf::FzColorspace::Fixed_RGB, geom.irect, mupdf::FzSeparations{}, 0};
+  mupdf::FzPixmap render(GeomInfo& geom, int scale) {
+    mupdf::FzIrect bbox{geom.irect.x0 * scale, geom.irect.y0 * scale, geom.irect.x1 * scale,
+                        geom.irect.y1 * scale};
+    mupdf::FzPixmap pix{mupdf::FzColorspace::Fixed_RGB, bbox, mupdf::FzSeparations{}, 0};
     pix.fz_clear_pixmap_with_value(0xFF);
+    const auto scale_mat = mupdf::FzMatrix::fz_scale(float(scale), float(scale));
 
-    mupdf::FzDevice dev{geom.fzmat, pix, geom.irect};
+    mupdf::FzDevice dev{geom.fzmat, pix, bbox};
     mupdf::FzCookie cookie{};
-    pdf->page_info->display_list.fz_run_display_list(dev, mupdf::FzMatrix{}, geom.rclip, cookie);
+    pdf->page_info->display_list.fz_run_display_list(
+      dev, scale_mat, geom.rclip.fz_transform_rect(scale_mat), cookie);
     dev.fz_close_device();
 
     return pix;
