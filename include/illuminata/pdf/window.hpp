@@ -243,6 +243,8 @@ struct PdfViewer : public Adw::ApplicationWindow {
                    {
                      {"<Shift>k Left Up Page_Up", "Previous Page"},
                      {"<Shift>j Down Right Page_Down", "Next Page"},
+                     {"Home", "First Page"},
+                     {"End", "Last Page"},
                    },
                },
                {
@@ -424,6 +426,16 @@ struct PdfViewer : public Adw::ApplicationWindow {
         case GDK_KEY_Up:
         case GDK_KEY_Page_Up: {
           navigate_pages(-1);
+          transform.reset();
+          return true;
+        }
+        case GDK_KEY_Home: {
+          navigate_to_page(0);
+          transform.reset();
+          return true;
+        }
+        case GDK_KEY_End: {
+          navigate_to_page(pdf->page_num() - 1);
           transform.reset();
           return true;
         }
