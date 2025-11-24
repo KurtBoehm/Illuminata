@@ -63,6 +63,10 @@ struct Notifier {
   Notifier() {
     dispatch_close_write.connect([this] { signal_close_write(); });
   }
+  Notifier(const Notifier&) = delete;
+  Notifier(Notifier&&) = delete;
+  Notifier& operator=(const Notifier&) = delete;
+  Notifier& operator=(Notifier&&) = delete;
   ~Notifier() {
     notify.stop();
   }
